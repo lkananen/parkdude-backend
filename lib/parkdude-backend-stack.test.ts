@@ -4,7 +4,7 @@ import {
   MatchStyle
 } from "@aws-cdk/assert";
 import cdk = require("@aws-cdk/core");
-import ParkdudeBackend = require("../lib/parkdude-backend-stack");
+import ParkdudeBackend = require("./parkdude-backend-stack");
 
 test("Stack should have no new changes", () => {
   const app = new cdk.App();
