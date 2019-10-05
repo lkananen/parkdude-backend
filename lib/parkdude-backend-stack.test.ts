@@ -101,7 +101,7 @@ test("Stack should have no new changes", () => {
               Name: "REST API"
             }
           },
-          restapiDeploymentD3722A4Cd376d669d91bc53639869d28107505b4: {
+          restapiDeploymentD3722A4C4dc16e9fb24e64cb73a43aaf3d870dba: {
             Type: "AWS::ApiGateway::Deployment",
             Properties: {
               RestApiId: {
@@ -109,7 +109,11 @@ test("Stack should have no new changes", () => {
               },
               Description: "Automatically created by the RestApi construct"
             },
-            DependsOn: ["restapiANY8BD19244", "restapi955FE7EE"]
+            DependsOn: [
+              "restapiproxyANY67DB6C3D",
+              "restapiproxyC0720446",
+              "restapi955FE7EE"
+            ]
           },
           restapiDeploymentStageprod0335F613: {
             Type: "AWS::ApiGateway::Stage",
@@ -118,7 +122,7 @@ test("Stack should have no new changes", () => {
                 Ref: "restapi39D779F7"
               },
               DeploymentId: {
-                Ref: "restapiDeploymentD3722A4Cd376d669d91bc53639869d28107505b4"
+                Ref: "restapiDeploymentD3722A4C4dc16e9fb24e64cb73a43aaf3d870dba"
               },
               StageName: "prod"
             }
@@ -175,7 +179,19 @@ test("Stack should have no new changes", () => {
               }
             }
           },
-          restapiANYApiPermissionMyTestStackrestapiBCB43E74ANYapiDB2D8677: {
+          restapiproxyC0720446: {
+            Type: "AWS::ApiGateway::Resource",
+            Properties: {
+              ParentId: {
+                Ref: "restapi955FE7EE"
+              },
+              PathPart: "{proxy+}",
+              RestApiId: {
+                Ref: "restapi39D779F7"
+              }
+            }
+          },
+          restapiproxyANYApiPermissionMyTestStackrestapiBCB43E74ANYapiproxy28F05A3E: {
             Type: "AWS::Lambda::Permission",
             Properties: {
               Action: "lambda:InvokeFunction",
@@ -207,13 +223,13 @@ test("Stack should have no new changes", () => {
                     {
                       Ref: "restapiDeploymentStageprod0335F613"
                     },
-                    "/*/api"
+                    "/*/api/{proxy+}"
                   ]
                 ]
               }
             }
           },
-          restapiANYApiPermissionTestMyTestStackrestapiBCB43E74ANYapiDEC74D65: {
+          restapiproxyANYApiPermissionTestMyTestStackrestapiBCB43E74ANYapiproxy22B33DB6: {
             Type: "AWS::Lambda::Permission",
             Properties: {
               Action: "lambda:InvokeFunction",
@@ -241,18 +257,18 @@ test("Stack should have no new changes", () => {
                     {
                       Ref: "restapi39D779F7"
                     },
-                    "/test-invoke-stage/*/api"
+                    "/test-invoke-stage/*/api/{proxy+}"
                   ]
                 ]
               }
             }
           },
-          restapiANY8BD19244: {
+          restapiproxyANY67DB6C3D: {
             Type: "AWS::ApiGateway::Method",
             Properties: {
               HttpMethod: "ANY",
               ResourceId: {
-                Ref: "restapi955FE7EE"
+                Ref: "restapiproxyC0720446"
               },
               RestApiId: {
                 Ref: "restapi39D779F7"

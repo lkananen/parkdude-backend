@@ -1,6 +1,7 @@
 import cdk = require("@aws-cdk/core");
 import apigateway = require("@aws-cdk/aws-apigateway");
 import lambda = require("@aws-cdk/aws-lambda");
+import { LambdaIntegration } from "@aws-cdk/aws-apigateway";
 
 export class ParkdudeBackendStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -13,15 +14,16 @@ export class ParkdudeBackendStack extends cdk.Stack {
       environment: {}
     });
 
-    const restApi = new apigateway.LambdaRestApi(this, "rest-api", {
+    const restApi = new apigateway.RestApi(this, "rest-api", {
       restApiName: "REST API",
-      description: "This service serves widgets.",
-      handler: restApiHandler,
-      proxy: false
+      description: "This service serves widgets."
     });
 
     const restApiRoot = restApi.root.addResource("api");
-    restApiRoot.addMethod("ANY");
+    restApiRoot.addProxy({
+      defaultIntegration: new LambdaIntegration(restApiHandler),
+      anyMethod: true
+    });
 
     // TODO: More configurations (e.g. for production)
   }
