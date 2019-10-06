@@ -1,6 +1,6 @@
 // Note: Only used in local development
 
-import { createApp } from "./app";
+import {createApp} from './app';
 
 const port = process.env.PORT || 3000;
 

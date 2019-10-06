@@ -1,17 +1,18 @@
-import * as request from "supertest";
-import { Express, Router } from "express";
+/* eslint-disable require-atomic-updates */
+import * as request from 'supertest';
+import {Express, Router} from 'express';
 
-jest.mock("../routes");
-import * as routes from "../routes";
-const { createRouter } = jest.requireActual("../routes");
+jest.mock('../routes');
+import * as routes from '../routes';
+const {createRouter} = jest.requireActual('../routes');
 
-import { createApp } from "../app";
-import { BadRequestError } from "../utils/errors";
-import { asyncWrapper } from "../middlewares/async-wrapper.middleware";
+import {createApp} from '../app';
+import {BadRequestError} from '../utils/errors';
+import {asyncWrapper} from '../middlewares/async-wrapper.middleware';
 
 const createRouterMock = routes.createRouter as jest.Mock<typeof createRouter>;
 
-describe("App (e2e)", () => {
+describe('App (e2e)', () => {
   let app: Express;
   let router: Router;
 
@@ -23,29 +24,29 @@ describe("App (e2e)", () => {
     app = await createApp();
   });
 
-  describe("Error handling", () => {
-    describe("404", () => {
-      test("Should return 404 for non-existent path", async () => {
+  describe('Error handling', () => {
+    describe('404', () => {
+      test('Should return 404 for non-existent path', async () => {
         await request(app)
-          .get("/api/non-existing-path")
+          .get('/api/non-existing-path')
           .expect(404)
-          .expect({ message: "Content not found" });
+          .expect({message: 'Content not found'});
       });
 
-      test("Should return 404 for existing path which does not support method", async () => {
+      test('Should return 404 for existing path which does not support method', async () => {
         await request(app)
-          .patch("/api/parking-spots")
+          .patch('/api/parking-spots')
           .expect(404)
-          .expect({ message: "Content not found" });
+          .expect({message: 'Content not found'});
       });
     });
 
-    describe("Thrown errors", () => {
-      test("Should handle BadRequestExceptions with 400", async () => {
+    describe('Thrown errors', () => {
+      test('Should handle BadRequestExceptions with 400', async () => {
         // Add a path that throws an exception
-        const message = "Invalid input (test error)";
+        const message = 'Invalid input (test error)';
         router.get(
-          "/test-path",
+          '/test-path',
           asyncWrapper(async (req, res) => {
             throw new BadRequestError(message);
           })
@@ -54,15 +55,15 @@ describe("App (e2e)", () => {
         const errorLogger = console.error;
         console.error = () => {};
         await request(app)
-          .get("/api/test-path")
-          .expect(400, { message });
+          .get('/api/test-path')
+          .expect(400, {message});
         console.error = errorLogger;
       });
 
-      test("Should handle Errors with 500 and unspecific message to prevent information leaks", async () => {
-        const message = "Test error message that should not be shown to user";
+      test('Should handle Errors with 500 and unspecific message to prevent information leaks', async () => {
+        const message = 'Test error message that should not be shown to user';
         router.get(
-          "/test-path",
+          '/test-path',
           asyncWrapper(async (req, res) => {
             throw new Error(message);
           })
@@ -71,8 +72,8 @@ describe("App (e2e)", () => {
         const errorLogger = console.error;
         console.error = () => {};
         await request(app)
-          .get("/api/test-path")
-          .expect(500, { message: "Internal server error" });
+          .get('/api/test-path')
+          .expect(500, {message: 'Internal server error'});
         console.error = errorLogger;
       });
     });

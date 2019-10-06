@@ -11,7 +11,7 @@ There are three possible ways to run development environment: with local express
 
 ### Method 1: Local express server
 
-Easiest way to run server is to run it as a normal Express server. Do note that this does not work exactly the same as it would with lambdas and API gateway. With this approach it's more important to make sure that application does not rely on any internal state.
+Easiest way to run REST API is to run it as a normal Express server. Do note that this does not work exactly the same as it would with lambdas and API gateway. With this approach it's more important to make sure that application does not rely on any internal state.
 
 Development:
 
@@ -20,7 +20,7 @@ Development:
 
 ### Method 2: Local API gateway with SAM
 
-SAM can be used to accurately test API gateway and lambdas. It uses Docker behind the scenes to simulate the gateway. The API calls take slightly longer to run than with method 1, since docker container is started for each request.
+SAM can be used to accurately test API gateway and lambdas. It uses Docker behind the scenes to simulate the gateway. The API calls take slightly longer to run than with method 1, since a docker container is started for each request.
 
 Requirements:
 
@@ -43,7 +43,7 @@ TODO
 1. `npm install` (only needed once, or when dependencies are changed)
 2. `npm run synth` (only needed once, or when aws stack configurations are changed)
 3. `npm run watch`
-4. `npm run deploy` (todo)
+4. `npm run deploy` (todo: test)
 
 ## Testing
 
@@ -61,6 +61,14 @@ Test commands:
 - `npm test <filter word>` Runs all test files which contain "\<filter word\>". For example `npm test parking` runs all test files with word "parking".
 - `npm run test:watch` Watches for file changes and runs the tests automatically
 - `npm run test:coverage` Runs all tests once and calculates code coverage. Output is shown both in console and outputted to `coverage` directory.
+
+## Linter
+
+Eslint is used to keep code style consistent and to more easily find bugs. To see linting errors, you'll need to install Eslint plugin which is available on most code editors, such as Visual Studio Code.
+
+The rules are somewhat strict (based on Google's ruleset with some modifications), which is why you'll most likely want to enable auto fix on save, which automatically formats the code and fixes any minor issues. On Visual Studio Code this setting is "eslint.autoFixOnSave", but it might be different for other editors. Eslint might conflict with other formatters, so if they start causing issues you may want to disable them for TypeScript files of this project.
+
+Linting can be run for all files with `npm run lint`.
 
 ## Production deployment
 

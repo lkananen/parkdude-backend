@@ -3,12 +3,12 @@ export async function fetchParkingSpots(): Promise<any> {
   return [
     {
       id: 1,
-      name: "Parking spot #1",
+      name: 'Parking spot #1',
       owner: undefined
     },
     {
       id: 2,
-      name: "Parking spot #345",
+      name: 'Parking spot #345',
       owner: undefined
     }
   ];

@@ -1,5 +1,5 @@
-import * as path from "path";
-import { removeSync, copySync } from "fs-extra";
+import * as path from 'path';
+import {removeSync, copySync} from 'fs-extra';
 
 /**
  * This script is used to ensure that build directory, which gets copied to
@@ -9,10 +9,10 @@ import { removeSync, copySync } from "fs-extra";
  * for development. A better solution should be investigated.
  */
 
-const nodeModulesPath = path.resolve(__dirname, "../node_modules");
-const buildNodeModulesPath = path.resolve(__dirname, "../build/node_modules");
+const nodeModulesPath = path.resolve(__dirname, '../node_modules');
+const buildNodeModulesPath = path.resolve(__dirname, '../build/node_modules');
 
-console.log("Copying node_modules to build directory...");
+console.log('Copying node_modules to build directory...');
 
 // Remove all files. This can be done with sync, since this is just a script.
 removeSync(buildNodeModulesPath);

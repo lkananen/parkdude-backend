@@ -2,43 +2,43 @@ import {
   expect as expectCDK,
   matchTemplate,
   MatchStyle
-} from "@aws-cdk/assert";
-import cdk = require("@aws-cdk/core");
-import ParkdudeBackend = require("./parkdude-backend-stack");
+} from '@aws-cdk/assert';
+import cdk = require('@aws-cdk/core');
+import ParkdudeBackend = require('./parkdude-backend-stack');
 
-test("Stack should have no new changes", () => {
+test('Stack should have no new changes', () => {
   const app = new cdk.App();
-  const stack = new ParkdudeBackend.ParkdudeBackendStack(app, "MyTestStack");
+  const stack = new ParkdudeBackend.ParkdudeBackendStack(app, 'MyTestStack');
   // If this changes, verify differences and replace with new one
   expectCDK(stack).to(
     matchTemplate(
       {
         Resources: {
           RestApiHandlerServiceRole04AE0DEA: {
-            Type: "AWS::IAM::Role",
+            Type: 'AWS::IAM::Role',
             Properties: {
               AssumeRolePolicyDocument: {
                 Statement: [
                   {
-                    Action: "sts:AssumeRole",
-                    Effect: "Allow",
+                    Action: 'sts:AssumeRole',
+                    Effect: 'Allow',
                     Principal: {
-                      Service: "lambda.amazonaws.com"
+                      Service: 'lambda.amazonaws.com'
                     }
                   }
                 ],
-                Version: "2012-10-17"
+                Version: '2012-10-17'
               },
               ManagedPolicyArns: [
                 {
-                  "Fn::Join": [
-                    "",
+                  'Fn::Join': [
+                    '',
                     [
-                      "arn:",
+                      'arn:',
                       {
-                        Ref: "AWS::Partition"
+                        Ref: 'AWS::Partition'
                       },
-                      ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                      ':iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
                     ]
                   ]
                 }
@@ -46,37 +46,37 @@ test("Stack should have no new changes", () => {
             }
           },
           RestApiHandler034BA627: {
-            Type: "AWS::Lambda::Function",
+            Type: 'AWS::Lambda::Function',
             Properties: {
               Code: {
                 S3Bucket: {
-                  Ref: "RestApiHandlerCodeS3Bucket17DDE020"
+                  Ref: 'RestApiHandlerCodeS3Bucket17DDE020'
                 },
                 S3Key: {
-                  "Fn::Join": [
-                    "",
+                  'Fn::Join': [
+                    '',
                     [
                       {
-                        "Fn::Select": [
+                        'Fn::Select': [
                           0,
                           {
-                            "Fn::Split": [
-                              "||",
+                            'Fn::Split': [
+                              '||',
                               {
-                                Ref: "RestApiHandlerCodeS3VersionKeyE23BA947"
+                                Ref: 'RestApiHandlerCodeS3VersionKeyE23BA947'
                               }
                             ]
                           }
                         ]
                       },
                       {
-                        "Fn::Select": [
+                        'Fn::Select': [
                           1,
                           {
-                            "Fn::Split": [
-                              "||",
+                            'Fn::Split': [
+                              '||',
                               {
-                                Ref: "RestApiHandlerCodeS3VersionKeyE23BA947"
+                                Ref: 'RestApiHandlerCodeS3VersionKeyE23BA947'
                               }
                             ]
                           }
@@ -86,72 +86,72 @@ test("Stack should have no new changes", () => {
                   ]
                 }
               },
-              Handler: "handlers/rest-api.handler",
+              Handler: 'handlers/rest-api.handler',
               Role: {
-                "Fn::GetAtt": ["RestApiHandlerServiceRole04AE0DEA", "Arn"]
+                'Fn::GetAtt': ['RestApiHandlerServiceRole04AE0DEA', 'Arn']
               },
-              Runtime: "nodejs10.x"
+              Runtime: 'nodejs10.x'
             },
-            DependsOn: ["RestApiHandlerServiceRole04AE0DEA"]
+            DependsOn: ['RestApiHandlerServiceRole04AE0DEA']
           },
           restapi39D779F7: {
-            Type: "AWS::ApiGateway::RestApi",
+            Type: 'AWS::ApiGateway::RestApi',
             Properties: {
-              Description: "This service serves widgets.",
-              Name: "REST API"
+              Description: 'This service serves widgets.',
+              Name: 'REST API'
             }
           },
           restapiDeploymentD3722A4C4dc16e9fb24e64cb73a43aaf3d870dba: {
-            Type: "AWS::ApiGateway::Deployment",
+            Type: 'AWS::ApiGateway::Deployment',
             Properties: {
               RestApiId: {
-                Ref: "restapi39D779F7"
+                Ref: 'restapi39D779F7'
               },
-              Description: "Automatically created by the RestApi construct"
+              Description: 'Automatically created by the RestApi construct'
             },
             DependsOn: [
-              "restapiproxyANY67DB6C3D",
-              "restapiproxyC0720446",
-              "restapi955FE7EE"
+              'restapiproxyANY67DB6C3D',
+              'restapiproxyC0720446',
+              'restapi955FE7EE'
             ]
           },
           restapiDeploymentStageprod0335F613: {
-            Type: "AWS::ApiGateway::Stage",
+            Type: 'AWS::ApiGateway::Stage',
             Properties: {
               RestApiId: {
-                Ref: "restapi39D779F7"
+                Ref: 'restapi39D779F7'
               },
               DeploymentId: {
-                Ref: "restapiDeploymentD3722A4C4dc16e9fb24e64cb73a43aaf3d870dba"
+                Ref: 'restapiDeploymentD3722A4C4dc16e9fb24e64cb73a43aaf3d870dba'
               },
-              StageName: "prod"
+              StageName: 'prod'
             }
           },
           restapiCloudWatchRole2D9E2F10: {
-            Type: "AWS::IAM::Role",
+            Type: 'AWS::IAM::Role',
             Properties: {
               AssumeRolePolicyDocument: {
                 Statement: [
                   {
-                    Action: "sts:AssumeRole",
-                    Effect: "Allow",
+                    Action: 'sts:AssumeRole',
+                    Effect: 'Allow',
                     Principal: {
-                      Service: "apigateway.amazonaws.com"
+                      Service: 'apigateway.amazonaws.com'
                     }
                   }
                 ],
-                Version: "2012-10-17"
+                Version: '2012-10-17'
               },
               ManagedPolicyArns: [
                 {
-                  "Fn::Join": [
-                    "",
+                  'Fn::Join': [
+                    '',
                     [
-                      "arn:",
+                      'arn:',
                       {
-                        Ref: "AWS::Partition"
+                        Ref: 'AWS::Partition'
                       },
-                      ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+                      ':iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
                     ]
                   ]
                 }
@@ -159,141 +159,141 @@ test("Stack should have no new changes", () => {
             }
           },
           restapiAccountC2304339: {
-            Type: "AWS::ApiGateway::Account",
+            Type: 'AWS::ApiGateway::Account',
             Properties: {
               CloudWatchRoleArn: {
-                "Fn::GetAtt": ["restapiCloudWatchRole2D9E2F10", "Arn"]
+                'Fn::GetAtt': ['restapiCloudWatchRole2D9E2F10', 'Arn']
               }
             },
-            DependsOn: ["restapi39D779F7"]
+            DependsOn: ['restapi39D779F7']
           },
           restapi955FE7EE: {
-            Type: "AWS::ApiGateway::Resource",
+            Type: 'AWS::ApiGateway::Resource',
             Properties: {
               ParentId: {
-                "Fn::GetAtt": ["restapi39D779F7", "RootResourceId"]
+                'Fn::GetAtt': ['restapi39D779F7', 'RootResourceId']
               },
-              PathPart: "api",
+              PathPart: 'api',
               RestApiId: {
-                Ref: "restapi39D779F7"
+                Ref: 'restapi39D779F7'
               }
             }
           },
           restapiproxyC0720446: {
-            Type: "AWS::ApiGateway::Resource",
+            Type: 'AWS::ApiGateway::Resource',
             Properties: {
               ParentId: {
-                Ref: "restapi955FE7EE"
+                Ref: 'restapi955FE7EE'
               },
-              PathPart: "{proxy+}",
+              PathPart: '{proxy+}',
               RestApiId: {
-                Ref: "restapi39D779F7"
+                Ref: 'restapi39D779F7'
               }
             }
           },
           restapiproxyANYApiPermissionMyTestStackrestapiBCB43E74ANYapiproxy28F05A3E: {
-            Type: "AWS::Lambda::Permission",
+            Type: 'AWS::Lambda::Permission',
             Properties: {
-              Action: "lambda:InvokeFunction",
+              Action: 'lambda:InvokeFunction',
               FunctionName: {
-                "Fn::GetAtt": ["RestApiHandler034BA627", "Arn"]
+                'Fn::GetAtt': ['RestApiHandler034BA627', 'Arn']
               },
-              Principal: "apigateway.amazonaws.com",
+              Principal: 'apigateway.amazonaws.com',
               SourceArn: {
-                "Fn::Join": [
-                  "",
+                'Fn::Join': [
+                  '',
                   [
-                    "arn:",
+                    'arn:',
                     {
-                      Ref: "AWS::Partition"
+                      Ref: 'AWS::Partition'
                     },
-                    ":execute-api:",
+                    ':execute-api:',
                     {
-                      Ref: "AWS::Region"
+                      Ref: 'AWS::Region'
                     },
-                    ":",
+                    ':',
                     {
-                      Ref: "AWS::AccountId"
+                      Ref: 'AWS::AccountId'
                     },
-                    ":",
+                    ':',
                     {
-                      Ref: "restapi39D779F7"
+                      Ref: 'restapi39D779F7'
                     },
-                    "/",
+                    '/',
                     {
-                      Ref: "restapiDeploymentStageprod0335F613"
+                      Ref: 'restapiDeploymentStageprod0335F613'
                     },
-                    "/*/api/{proxy+}"
+                    '/*/api/{proxy+}'
                   ]
                 ]
               }
             }
           },
           restapiproxyANYApiPermissionTestMyTestStackrestapiBCB43E74ANYapiproxy22B33DB6: {
-            Type: "AWS::Lambda::Permission",
+            Type: 'AWS::Lambda::Permission',
             Properties: {
-              Action: "lambda:InvokeFunction",
+              Action: 'lambda:InvokeFunction',
               FunctionName: {
-                "Fn::GetAtt": ["RestApiHandler034BA627", "Arn"]
+                'Fn::GetAtt': ['RestApiHandler034BA627', 'Arn']
               },
-              Principal: "apigateway.amazonaws.com",
+              Principal: 'apigateway.amazonaws.com',
               SourceArn: {
-                "Fn::Join": [
-                  "",
+                'Fn::Join': [
+                  '',
                   [
-                    "arn:",
+                    'arn:',
                     {
-                      Ref: "AWS::Partition"
+                      Ref: 'AWS::Partition'
                     },
-                    ":execute-api:",
+                    ':execute-api:',
                     {
-                      Ref: "AWS::Region"
+                      Ref: 'AWS::Region'
                     },
-                    ":",
+                    ':',
                     {
-                      Ref: "AWS::AccountId"
+                      Ref: 'AWS::AccountId'
                     },
-                    ":",
+                    ':',
                     {
-                      Ref: "restapi39D779F7"
+                      Ref: 'restapi39D779F7'
                     },
-                    "/test-invoke-stage/*/api/{proxy+}"
+                    '/test-invoke-stage/*/api/{proxy+}'
                   ]
                 ]
               }
             }
           },
           restapiproxyANY67DB6C3D: {
-            Type: "AWS::ApiGateway::Method",
+            Type: 'AWS::ApiGateway::Method',
             Properties: {
-              HttpMethod: "ANY",
+              HttpMethod: 'ANY',
               ResourceId: {
-                Ref: "restapiproxyC0720446"
+                Ref: 'restapiproxyC0720446'
               },
               RestApiId: {
-                Ref: "restapi39D779F7"
+                Ref: 'restapi39D779F7'
               },
-              AuthorizationType: "NONE",
+              AuthorizationType: 'NONE',
               Integration: {
-                IntegrationHttpMethod: "POST",
-                Type: "AWS_PROXY",
+                IntegrationHttpMethod: 'POST',
+                Type: 'AWS_PROXY',
                 Uri: {
-                  "Fn::Join": [
-                    "",
+                  'Fn::Join': [
+                    '',
                     [
-                      "arn:",
+                      'arn:',
                       {
-                        Ref: "AWS::Partition"
+                        Ref: 'AWS::Partition'
                       },
-                      ":apigateway:",
+                      ':apigateway:',
                       {
-                        Ref: "AWS::Region"
+                        Ref: 'AWS::Region'
                       },
-                      ":lambda:path/2015-03-31/functions/",
+                      ':lambda:path/2015-03-31/functions/',
                       {
-                        "Fn::GetAtt": ["RestApiHandler034BA627", "Arn"]
+                        'Fn::GetAtt': ['RestApiHandler034BA627', 'Arn']
                       },
-                      "/invocations"
+                      '/invocations'
                     ]
                   ]
                 }
@@ -303,16 +303,16 @@ test("Stack should have no new changes", () => {
         },
         Parameters: {
           RestApiHandlerCodeS3Bucket17DDE020: {
-            Type: "String",
+            Type: 'String',
             Description: 'S3 bucket for asset "MyTestStack/RestApiHandler/Code"'
           },
           RestApiHandlerCodeS3VersionKeyE23BA947: {
-            Type: "String",
+            Type: 'String',
             Description:
               'S3 key for asset version "MyTestStack/RestApiHandler/Code"'
           },
           RestApiHandlerCodeArtifactHashB622F080: {
-            Type: "String",
+            Type: 'String',
             Description:
               'Artifact hash for asset "MyTestStack/RestApiHandler/Code"'
           }
@@ -320,26 +320,26 @@ test("Stack should have no new changes", () => {
         Outputs: {
           restapiEndpointC67DEFEA: {
             Value: {
-              "Fn::Join": [
-                "",
+              'Fn::Join': [
+                '',
                 [
-                  "https://",
+                  'https://',
                   {
-                    Ref: "restapi39D779F7"
+                    Ref: 'restapi39D779F7'
                   },
-                  ".execute-api.",
+                  '.execute-api.',
                   {
-                    Ref: "AWS::Region"
+                    Ref: 'AWS::Region'
                   },
-                  ".",
+                  '.',
                   {
-                    Ref: "AWS::URLSuffix"
+                    Ref: 'AWS::URLSuffix'
                   },
-                  "/",
+                  '/',
                   {
-                    Ref: "restapiDeploymentStageprod0335F613"
+                    Ref: 'restapiDeploymentStageprod0335F613'
                   },
-                  "/"
+                  '/'
                 ]
               ]
             }

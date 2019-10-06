@@ -1,4 +1,3 @@
-*.js
 !jest.config.js
 *.d.ts
 node_modules
@@ -10,3 +9,6 @@ cdk.out
 build
 template.yaml
 coverage
+
+# Editor configs
+.vscode
