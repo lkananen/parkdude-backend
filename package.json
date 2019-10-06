@@ -10,7 +10,9 @@
     "watch": "tsc -w",
     "dev": "nodemon --watch app/**/*.ts --ignore app/**/*.test.ts --exec ts-node app/index.ts",
     "dev:serve": "ts-node app/index.ts",
-    "test": "jest",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
+    "test:watch": "jest --runInBand --watch",
     "cdk": "cdk",
     "synth": "cdk synth",
     "local-synth": "cdk synth --no-staging > template.yaml",
@@ -19,9 +21,11 @@
   "devDependencies": {
     "@aws-cdk/assert": "^1.11.0",
     "@types/jest": "^24.0.18",
+    "@types/supertest": "^2.0.8",
     "aws-cdk": "^1.11.0",
     "jest": "^24.9.0",
     "nodemon": "^1.19.3",
+    "supertest": "^4.0.2",
     "ts-jest": "^24.0.2",
     "ts-node": "^8.1.0",
     "typescript": "~3.6.2"

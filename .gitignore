@@ -9,3 +9,4 @@ cdk.out
 
 build
 template.yaml
+coverage

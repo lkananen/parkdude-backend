@@ -47,7 +47,20 @@ TODO
 
 ## Testing
 
-TODO
+Unit tests are split into two categories: end-to-end (e2e) and unit tests.
+
+End-to-end tests the functionality by calling the server endpoints that are visible to outside world. These tests use a real database to accurately test the functionality. These tests are currently done by calling Express directly, skipping the API gateway completely. New express instance is however created for each test, so functionality should be very similar. All end-to-end tests are in `app/e2e-tests` directory.
+
+Unit tests typically test a single module or a small amount of related modules. These tests should not use real database. Instead all database operations must be mocked. Unit tests should be implemented as such that they can be run parallel if necessary. Unit test files are located in same directory as the module they are testing.
+
+Jest is used to run the tests. Currently Jest always runs both end-to-end and unit tests, but these may be separated later if necessary.
+
+Test commands:
+
+- `npm test` Runs all tests once
+- `npm test <filter word>` Runs all test files which contain "\<filter word\>". For example `npm test parking` runs all test files with word "parking".
+- `npm run test:watch` Watches for file changes and runs the tests automatically
+- `npm run test:coverage` Runs all tests once and calculates code coverage. Output is shown both in console and outputted to `coverage` directory.
 
 ## Production deployment
 

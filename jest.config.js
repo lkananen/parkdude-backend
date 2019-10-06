@@ -1,6 +1,6 @@
 module.exports = {
     "roots": [
-      "<rootDir>/lib"
+      "<rootDir>/lib", "<rootDir>/app"
     ],
     testMatch: [ '**/*.test.ts'],
     "transform": {
