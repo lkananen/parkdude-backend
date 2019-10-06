@@ -2,11 +2,11 @@
   "name": "parkdude-backend",
   "version": "0.1.0",
   "bin": {
-    "parkdude-backend": "bin/parkdude-backend.js"
+    "parkdude-backend": "build/bin/parkdude-backend.js"
   },
   "scripts": {
     "build": "tsc",
-    "postinstall": "ts-node lib/copy-node-modules.ts",
+    "postinstall": "ts-node bin/copy-node-modules.ts",
     "watch": "tsc -w",
     "dev": "nodemon --watch app/**/*.ts --ignore app/**/*.test.ts --exec ts-node app/index.ts",
     "dev:serve": "ts-node app/index.ts",
