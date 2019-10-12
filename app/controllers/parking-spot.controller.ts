@@ -1,9 +1,17 @@
 import {Request, Response} from 'express';
-import {fetchParkingSpots} from '../services/parking-spot.service';
+import {fetchParkingSpots, createParkingSpot} from '../services/parking-spot.service';
 
 export async function getParkingSpots(req: Request, res: Response) {
-  const spots = await fetchParkingSpots();
+  const parkingSpots = await fetchParkingSpots();
   res.status(200).json({
-    data: spots
+    data: parkingSpots
+  });
+}
+
+export async function postParkingSpot(req: Request, res: Response) {
+  const parkingSpot = await createParkingSpot(req.body);
+  res.status(200).json({
+    message: 'Parking spot successfully created.',
+    data: parkingSpot
   });
 }
