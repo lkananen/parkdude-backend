@@ -2,9 +2,9 @@
 import * as request from 'supertest';
 import {Express, Router} from 'express';
 
-jest.mock('../routes');
-import * as routes from '../routes';
-const {createRouter} = jest.requireActual('../routes');
+jest.mock('../router');
+import * as routes from '../router';
+const {createRouter} = jest.requireActual('../router');
 
 import {createApp} from '../app';
 import {BadRequestError} from '../utils/errors';

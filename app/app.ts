@@ -1,5 +1,5 @@
 import * as express from 'express';
-import {createRouter} from './routes';
+import {createRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection} from 'typeorm';
