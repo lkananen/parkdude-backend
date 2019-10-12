@@ -2,8 +2,11 @@ import * as express from 'express';
 import {createRouter} from './routes';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
+import {createConnection} from 'typeorm';
 
 export async function createApp(): Promise<Express> {
+  await createConnection();
+
   const app = express();
   app.use('/api', createRouter());
 

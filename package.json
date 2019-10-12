@@ -17,7 +17,11 @@
     "cdk": "cdk",
     "synth": "cdk synth",
     "local-synth": "cdk synth --no-staging > template.yaml",
-    "sam-api": "cdk synth --no-staging > template.yaml && sam local start-api"
+    "sam-api": "cdk synth --no-staging > template.yaml && sam local start-api",
+    "typeorm": "ts-node ./node_modules/typeorm/cli.js",
+    "typeorm:generate": "npm run typeorm migration:generate -- --dir app/migrations --config env/app.dev.env --name",
+    "typeorm:migrate": "npm run typeorm migration:run -- --config env/app.dev.env",
+    "typeorm:revert": "npm run typeorm migration:revert -- --config env/app.dev.env"
   },
   "devDependencies": {
     "@aws-cdk/assert": "^1.11.0",
@@ -40,15 +44,21 @@
     "@aws-cdk/core": "^1.11.0",
     "@types/aws-lambda": "^8.10.33",
     "@types/aws-serverless-express": "^3.3.1",
+    "@types/dotenv": "^6.1.1",
     "@types/fs-extra": "^8.0.0",
     "@types/node": "^12.7.11",
     "@types/rimraf": "^2.0.2",
     "@typescript-eslint/eslint-plugin": "^2.3.2",
     "@typescript-eslint/parser": "^2.3.2",
     "aws-serverless-express": "^3.3.6",
+    "class-validator": "^0.10.1",
+    "dotenv": "^8.1.0",
     "eslint": "^6.5.1",
     "express": "^4.17.1",
     "fs-extra": "^8.1.0",
-    "source-map-support": "^0.5.9"
+    "pg": "^7.12.1",
+    "reflect-metadata": "^0.1.13",
+    "source-map-support": "^0.5.9",
+    "typeorm": "^0.2.19"
   }
 }

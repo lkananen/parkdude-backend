@@ -12,3 +12,7 @@ coverage
 
 # Editor configs
 .vscode
+
+# Environment variables
+env/app.dev.env
+env/app.prod.env

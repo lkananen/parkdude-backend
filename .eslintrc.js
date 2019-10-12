@@ -12,6 +12,7 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-unused-vars': 'off',
+    '@typescript-eslint/no-use-before-define': ["error", { "functions": false }],
     'comma-dangle': 'off',
     'max-len': ['error', { code: 120 }],
     'new-cap': 'off',
