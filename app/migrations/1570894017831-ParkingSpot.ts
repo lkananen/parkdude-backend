@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class ParkingSpot1570894017831 implements MigrationInterface {
