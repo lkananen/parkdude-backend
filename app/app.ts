@@ -1,4 +1,5 @@
 import * as express from 'express';
+import * as cors from 'cors';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
@@ -13,6 +14,10 @@ export async function createApp(): Promise<Express> {
   const app = express();
 
   app.use(express.json());
+
+  if (process.env.NODE_ENV === 'development') {
+    app.use(cors());
+  }
 
   app.use('/api', createRouter());
 
