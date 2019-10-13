@@ -27,6 +27,7 @@ There are three possible ways to run development environment: with local express
 - Node version 10.x or newer (https://nodejs.org/en/)
 - PostgreSQL database (instructions below)
 - Copy file `env/app.dev.example.env` as `env/app.dev.env` and modify if necessary.
+- Copy file `env/app.sam-dev.example.env` as `env/app.sam-dev.env` and modify if necessary.
 - Copy file `env/app.test.example.env` as `env/app.test.env` and modify if necessary.
 
 There are many ways to set up the database, but one of the easiest ways is docker.

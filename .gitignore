@@ -15,5 +15,6 @@ coverage
 
 # Environment variables
 env/app.dev.env
+env/app.sam-dev.env
 env/app.test.env
 env/app.prod.env
