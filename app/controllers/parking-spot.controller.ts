@@ -10,7 +10,7 @@ export async function getParkingSpots(req: Request, res: Response) {
 
 export async function postParkingSpot(req: Request, res: Response) {
   const parkingSpot = await createParkingSpot(req.body);
-  res.status(200).json({
+  res.status(201).json({
     message: 'Parking spot successfully created.',
     data: parkingSpot
   });

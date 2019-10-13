@@ -14,7 +14,16 @@ export const handler = async (
 ) => {
   // Makes it so that lambda does not get stuck waiting for db connections to close
   context.callbackWaitsForEmptyEventLoop = false;
-
-  const server = await serverPromise;
-  return await proxy(server, event, context, 'PROMISE').promise;
+  try {
+    const server = await serverPromise;
+    return await proxy(server, event, context, 'PROMISE').promise;
+  } catch (error) {
+    console.error('Uncaught exception', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: 'Internal server error'
+      })
+    };
+  }
 };

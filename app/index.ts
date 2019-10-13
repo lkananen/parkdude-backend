@@ -11,7 +11,7 @@ const configResult = dotenv.config({
 
 if (configResult.error) {
   console.error(configResult.error);
-  throw new Error('Environment variable configuration failed. Did yoy add env/app.dev.env file?');
+  throw new Error('Environment variable configuration failed. Did you add env/app.dev.env file?');
 }
 
 const port = process.env.PORT || 3000;

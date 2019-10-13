@@ -2,12 +2,18 @@ import * as express from 'express';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
+import {createConnection, getConnectionManager} from 'typeorm';
 import {ValidationError} from 'class-validator';
 
 export async function createApp(): Promise<Express> {
-  await createConnection();
+  if (getConnectionManager().connections.length === 0) {
+    await createConnection();
+  }
 
   const app = express();
+
+  app.use(express.json());
+
   app.use('/api', createRouter());
 
   // 404 handler (none of the routes match)
