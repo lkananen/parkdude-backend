@@ -1,10 +1,7 @@
 // Note: Only used in local development
-
-import {createApp} from './app';
 import * as path from 'path';
 import dotenv = require('dotenv');
-
-// Add environment variables
+// Add environment variables, required to import createApp
 const configResult = dotenv.config({
   path: path.join(__dirname, '../env/app.dev.env')
 });
@@ -16,6 +13,7 @@ if (configResult.error) {
 
 const port = process.env.PORT || 3000;
 
+import {createApp} from './app';
 (async () => {
   try {
     const app = await createApp();

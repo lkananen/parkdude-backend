@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as cors from 'cors';
-import {createRouter} from './router';
+import {passport} from './middlewares/passport';
+import {createRouter, createAuthRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection, getConnectionManager} from 'typeorm';
@@ -14,12 +15,15 @@ export async function createApp(): Promise<Express> {
   const app = express();
 
   app.use(express.json());
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   if (process.env.NODE_ENV === 'development') {
     app.use(cors());
   }
 
   app.use('/api', createRouter());
+  app.use('/auth', createAuthRouter());
 
   // 404 handler (none of the routes match)
   app.use(function(req, res, next) {
