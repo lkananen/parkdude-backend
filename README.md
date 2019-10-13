@@ -25,6 +25,7 @@ There are three possible ways to run development environment: with local express
 ### Common prerequisites
 
 - Node version 10.x or newer (https://nodejs.org/en/)
+- `npm install` To install dependencies.
 - PostgreSQL database (instructions below)
 - Copy file `env/app.dev.example.env` as `env/app.dev.env` and modify if necessary.
 - Copy file `env/app.sam-dev.example.env` as `env/app.sam-dev.env` and modify if necessary.
@@ -51,8 +52,7 @@ Easiest way to run REST API is to run it as a normal Express server. Do note tha
 
 Development:
 
-1. `npm install` (only needed once, or when dependencies are changed)
-2. `npm run dev` (Launches REST API server at http://localhost:3000, and automatically restarts on code changes. Restart can also be manually triggered by writing `rs` to the console.)
+1. `npm run dev` (Launches REST API server at http://localhost:3000, and automatically restarts on code changes. Restart can also be manually triggered by writing `rs` to the console.)
 
 ### Method 2: Local API gateway with SAM
 
@@ -66,9 +66,8 @@ Requirements:
 
 Development:
 
-1. `npm install` (only needed once, or when dependencies are changed)
-2. `npm run watch` (compiles code automatically when changed)
-3. `npm run sam-api` (generates template.yaml and launches REST API at http://localhost:3000/api)
+1. `npm run watch` (compiles code automatically when changed)
+2. `npm run sam-api` (generates template.yaml and launches REST API at http://localhost:3000/api)
 
 As long as `watch` and `sam-api` are active, all code changes are applied immediately.
 
@@ -76,10 +75,9 @@ As long as `watch` and `sam-api` are active, all code changes are applied immedi
 
 TODO
 
-1. `npm install` (only needed once, or when dependencies are changed)
-2. `npm run synth` (only needed once, or when aws stack configurations are changed)
-3. `npm run watch`
-4. `npm run deploy` (todo: test)
+1. `npm run synth` (only needed once, or when aws stack configurations are changed)
+2. `npm run watch`
+3. `npm run deploy` (todo: test)
 
 ## Database migrations
 
