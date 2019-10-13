@@ -9,6 +9,7 @@ const {createRouter} = jest.requireActual('../router');
 import {createApp} from '../app';
 import {BadRequestError} from '../utils/errors';
 import {asyncWrapper} from '../middlewares/async-wrapper.middleware';
+import {closeConnection} from '../test-utils/teardown';
 
 const createRouterMock = routes.createRouter as jest.Mock<typeof createRouter>;
 
@@ -22,6 +23,10 @@ describe('App (e2e)', () => {
     router = createRouter();
     createRouterMock.mockReturnValue(router);
     app = await createApp();
+  });
+
+  afterAll(async () => {
+    await closeConnection();
   });
 
   describe('Error handling', () => {

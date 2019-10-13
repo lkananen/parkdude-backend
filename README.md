@@ -27,12 +27,13 @@ There are three possible ways to run development environment: with local express
 - Node version 10.x or newer (https://nodejs.org/en/)
 - PostgreSQL database (instructions below)
 - Copy file `env/app.dev.example.env` as `env/app.dev.env` and modify if necessary.
+- Copy file `env/app.test.example.env` as `env/app.test.env` and modify if necessary.
 
 There are many ways to set up the database, but one of the easiest ways is docker.
 
 Database setup with docker:
 
-1. `docker run --rm --name parkdude-db -e POSTGRES_PASSWORD=password -p 5432:5432 -v parkdude-db-volume:/var/lib/postgresql/data -d postgres:11.5` Creates docker container and assigns it with a volume. Different password can be selected. Note that [Postgres 12 does not currently work correctly with Typeorm](https://github.com/typeorm/typeorm/issues/4573), so version 11 should be used.
+1. `docker run --name parkdude-db -e POSTGRES_PASSWORD=password -p 5432:5432 -v parkdude-db-volume:/var/lib/postgresql/data -d postgres:11.5` Creates docker container and assigns it with a volume. Different password can be selected. Note that [Postgres 12 does not currently work correctly with Typeorm](https://github.com/typeorm/typeorm/issues/4573), so version 11 should be used.
 2. `docker exec parkdude-db createdb -U postgres parkdude` Creates the database
 3. `docker exec parkdude-db createdb -U postgres parkdude-test` Creates the database that's used for the tests.
 4. `npm run typeorm:migrate` To apply database migrations. Needs to be run whenever migrations change (see Database migrations section for more details).
@@ -98,6 +99,8 @@ End-to-end tests the functionality by calling the server endpoints that are visi
 Unit tests typically test a single module or a small amount of related modules. These tests should not use real database. Instead all database operations must be mocked. Unit tests should be implemented as such that they can be run parallel if necessary. Unit test files are located in same directory as the module they are testing.
 
 Jest is used to run the tests. Currently Jest always runs both end-to-end and unit tests, but these may be separated later if necessary.
+
+Tests use different database from the one used for development. Database tables are dropped and recreated based on entity schemas at start of the test run. End-to-end tests should ensure that tables are cleared after tests (e.g. with `afterEach` or `afterAll`) so that existing values won't affect other test cases. Tests are run sequentially, so race conditions shouldn't be a concern as long as asynchrous functions are awaited correctly.
 
 Test commands:
 
