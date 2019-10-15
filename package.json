@@ -46,6 +46,7 @@
     "@types/aws-serverless-express": "^3.3.1",
     "@types/cors": "^2.8.6",
     "@types/dotenv": "^6.1.1",
+    "@types/express-session": "^1.15.15",
     "@types/fs-extra": "^8.0.0",
     "@types/node": "^12.7.11",
     "@types/passport-google-oauth": "^1.0.41",
@@ -54,16 +55,19 @@
     "@typescript-eslint/parser": "^2.3.2",
     "aws-serverless-express": "^3.3.6",
     "class-validator": "^0.10.1",
+    "connect-typeorm": "^1.1.1",
     "cors": "^2.8.5",
     "dotenv": "^8.1.0",
     "eslint": "^6.5.1",
     "express": "^4.17.1",
+    "express-session": "^1.17.0",
     "fs-extra": "^8.1.0",
     "passport": "^0.4.0",
     "passport-google-oauth": "^2.0.0",
     "pg": "^7.12.1",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.9",
-    "typeorm": "^0.2.19"
+    "typeorm": "^0.2.19",
+    "typeorm-static": "^1.1.1"
   }
 }

@@ -1,11 +1,14 @@
 import * as express from 'express';
 import * as cors from 'cors';
+import * as session from 'express-session';
 import {passport} from './middlewares/passport';
 import {createRouter, createAuthRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
-import {createConnection, getConnectionManager} from 'typeorm';
+import {createConnection, getConnectionManager, getConnection} from 'typeorm';
 import {ValidationError} from 'class-validator';
+import {Session} from './entities/session';
+import {TypeormStore} from 'connect-typeorm';
 
 export async function createApp(): Promise<Express> {
   if (getConnectionManager().connections.length === 0) {
@@ -14,9 +17,26 @@ export async function createApp(): Promise<Express> {
 
   const app = express();
 
+  const repository = getConnection().getRepository(Session);
+
   app.use(express.json());
   app.use(passport.initialize());
-  app.use(passport.session());
+
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
+    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set.');
+  }
+
+  app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    store: new TypeormStore({
+      cleanupLimit: 2,
+      limitSubquery: false, // If using MariaDB.
+      ttl: 86400
+    }).connect(repository),
+  }));
 
   if (process.env.NODE_ENV === 'development') {
     app.use(cors());

@@ -1,18 +1,21 @@
-export const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth").OAuth2Strategy;
+export const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
 const transformGoogleProfile = (profile: any) => ({
-    name: profile.displayName,
+  name: profile.displayName,
 });
 
 // Register Google Passport strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: process.env.OAUTH_CALLBACK_URL
+  clientID: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+  callbackURL: process.env.OAUTH_CALLBACK_URL
 },
-    async (accessToken: any, refreshToken: any, profile: any, done: any) => done(null, transformGoogleProfile(profile._json))
-));
+async (accessToken: any, refreshToken: any, profile: any, done: any) =>
+  done(null, {// transformGoogleProfile(profile._json))
+    profile: profile,
+    token: accessToken}
+  )));
 
 // Serialize user into the sessions
 passport.serializeUser((user: any, done: any) => done(null, user));
