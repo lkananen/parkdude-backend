@@ -1,0 +1,20 @@
+!jest.config.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+build
+template.yaml
+coverage
+
+# Editor configs
+.vscode
+
+# Environment variables
+env/app.dev.env
+env/app.sam-dev.env
+env/app.test.env
+env/app.prod.env
