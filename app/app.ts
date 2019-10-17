@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from 'cors';
 import * as session from 'express-session';
 import {passport} from './middlewares/passport';
-import {createRouter, createAuthRouter} from './router';
+import {createRouter, createAuthRouter, createAdminRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection, getConnectionManager, getConnection} from 'typeorm';
@@ -20,8 +20,6 @@ export async function createApp(): Promise<Express> {
   const repository = getConnection().getRepository(Session);
 
   app.use(express.json());
-  app.use(passport.initialize());
-  app.use(passport.session());
 
   const sessionSecret = process.env.SESSION_SECRET;
   if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
@@ -34,10 +32,15 @@ export async function createApp(): Promise<Express> {
     saveUninitialized: false,
     store: new TypeormStore({
       cleanupLimit: 2,
-      limitSubquery: false, // If using MariaDB.
+      limitSubquery: false,
       ttl: 86400
     }).connect(repository),
   }));
+
+  // Initialize passport and connect it to sessions so that it can add user property etc. to requests
+  app.use(passport.initialize());
+  app.use(passport.session());
+
 
   if (process.env.NODE_ENV === 'development') {
     app.use(cors());
@@ -45,6 +48,7 @@ export async function createApp(): Promise<Express> {
 
   app.use('/api', createRouter());
   app.use('/auth', createAuthRouter());
+  app.use('/admin', createAdminRouter());
 
   // 404 handler (none of the routes match)
   app.use(function(req, res, next) {

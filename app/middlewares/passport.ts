@@ -2,11 +2,6 @@ export const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 import {User} from '../entities/user';
 
-// if (getConnectionManager().connections.length === 0) {
-//  createConnection();
-// }
-// const repository = getConnection().getRepository(User);
-
 // Register Google Passport strategy
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
@@ -21,18 +16,17 @@ async (accessToken: any, refreshToken: any, profile: any, done: any) => {
     user = new User();
     user.name = profile.displayName;
     user.email = email;
-    user.usergroup = email.search('@innogiant') === -1 ? 'unauthorized' : 'authorized';
+    user.usergroup = email.search('@innogiant') === -1 ? 'unactivated' : 'activated';
     await user.save();
   }
   done(null, user);
 }));
 
-// Serialize user into the sessions
+// Serialize user into the session cookie
 passport.serializeUser((user: User, done: any) => done(null, user.id));
 
-// Deserialize user from the sessions
+// Deserialize user from the session cookie
 passport.deserializeUser(async (id: number, done: any) =>{
   const user = await User.findOne({id});
-  console.log('Deserializing...', user);
   done(null, user);
 });
