@@ -22,10 +22,10 @@ export function createAuthRouter(): Router {
 
   router.get(
     '/google/callback',
+    // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
     passport.authenticate('google', {failureRedirect: 'auth/', session: false}),
     function(req: any, res) {
-      console.log(req.user.token);
-      console.log(req.user);
+      console.log('Authentication successful');
       req.session.token = req.user.token;
       res.redirect('/');
     });

@@ -21,6 +21,7 @@ export async function createApp(): Promise<Express> {
 
   app.use(express.json());
   app.use(passport.initialize());
+  app.use(passport.session());
 
   const sessionSecret = process.env.SESSION_SECRET;
   if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
