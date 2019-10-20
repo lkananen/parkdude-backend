@@ -1,6 +1,8 @@
-export const passport = require('passport');
+import passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 import {User} from '../entities/user';
+
+export {passport};
 
 // Register Google Passport strategy
 passport.use(new GoogleStrategy({
