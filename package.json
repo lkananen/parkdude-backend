@@ -8,7 +8,7 @@
     "build": "tsc",
     "postinstall": "ts-node bin/copy-node-modules.ts",
     "watch": "tsc -w",
-    "dev": "nodemon --watch app/**/*.ts --ignore app/**/*.test.ts --exec ts-node app/index.ts",
+    "dev": "nodemon --watch app/**/*.ts --ignore app/**/*.test.ts --ext ts,env --exec \"ts-node app/index.ts\"",
     "dev:serve": "ts-node app/index.ts",
     "test": "jest --runInBand",
     "test:coverage": "jest --runInBand --coverage",
