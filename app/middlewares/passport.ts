@@ -5,12 +5,19 @@ import {User} from '../entities/user';
 export {passport};
 
 // Register Google Passport strategy
-passport.use(new GoogleStrategy({
+passport.use('google-mobile', new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: process.env.OAUTH_CALLBACK_URL
-},
-async (accessToken: any, refreshToken: any, profile: any, done: any) => {
+  callbackURL: process.env.HOST + '/auth/goole/callback/mobile'
+}, loginCallback));
+
+passport.use('google-web', new GoogleStrategy({
+  clientID: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+  callbackURL: process.env.HOST + '/auth/google/callback'
+}, loginCallback));
+
+async function loginCallback(accessToken: any, refreshToken: any, profile: any, done: any) {
   const email: string = profile._json.email;
   let user = await User.findOne({email});
 
@@ -22,7 +29,8 @@ async (accessToken: any, refreshToken: any, profile: any, done: any) => {
     await user.save();
   }
   done(null, user);
-}));
+}
+
 
 // Serialize user into the session cookie
 passport.serializeUser((user: User, done: any) => done(null, user.id));
