@@ -6,11 +6,11 @@ import {Bigint} from 'typeorm-static';
 export class Session implements ISession {
   @Index()
   @Column('bigint', {transformer: Bigint})
-  public expiredAt = Date.now();
+  expiredAt = Date.now();
 
   @PrimaryColumn('varchar', {length: 255})
-  public id = '';
+  id = '';
 
   @Column('text')
-  public json = '';
+  json = '';
 }

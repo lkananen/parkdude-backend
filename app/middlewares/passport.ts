@@ -1,6 +1,6 @@
 import passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-import {User} from '../entities/user';
+import {User, UserRole} from '../entities/user';
 
 export {passport};
 
@@ -8,7 +8,7 @@ export {passport};
 passport.use('google-mobile', new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: process.env.HOST + '/auth/goole/callback/mobile'
+  callbackURL: process.env.HOST + '/auth/google/callback/mobile'
 }, loginCallback));
 
 passport.use('google-web', new GoogleStrategy({
@@ -25,7 +25,7 @@ async function loginCallback(accessToken: any, refreshToken: any, profile: any, 
     user = new User();
     user.name = profile.displayName;
     user.email = email;
-    user.usergroup = email.search('@innogiant') === -1 ? 'unactivated' : 'activated';
+    user.role = email.endsWith('@innogiant.com') ? UserRole.VERIFIED : UserRole.UNVERIFIED;
     await user.save();
   }
   done(null, user);
@@ -36,7 +36,7 @@ async function loginCallback(accessToken: any, refreshToken: any, profile: any, 
 passport.serializeUser((user: User, done: any) => done(null, user.id));
 
 // Deserialize user from the session cookie
-passport.deserializeUser(async (id: number, done: any) =>{
+passport.deserializeUser(async (id: string, done: any) =>{
   const user = await User.findOne({id});
   done(null, user);
 });
