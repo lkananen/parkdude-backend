@@ -8,13 +8,13 @@ export {passport};
 passport.use('google-mobile', new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: process.env.HOST + '/auth/google/callback/mobile'
+  callbackURL: process.env.HOST + '/api/auth/google/callback/mobile'
 }, loginCallback));
 
 passport.use('google-web', new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: process.env.HOST + '/auth/google/callback'
+  callbackURL: process.env.HOST + '/api/auth/google/callback'
 }, loginCallback));
 
 async function loginCallback(accessToken: any, refreshToken: any, profile: any, done: any) {

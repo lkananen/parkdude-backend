@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from 'cors';
 import * as session from 'express-session';
 import {passport} from './middlewares/passport';
-import {createRouter, createAuthRouter, createAdminRouter} from './router';
+import {createRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection, getConnectionManager, getConnection} from 'typeorm';
@@ -47,8 +47,6 @@ export async function createApp(): Promise<Express> {
   }
 
   app.use('/api', createRouter());
-  app.use('/auth', createAuthRouter());
-  app.use('/admin', createAdminRouter());
 
   // 404 handler (none of the routes match)
   app.use(function(req, res, next) {
