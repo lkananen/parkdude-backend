@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as cors from 'cors';
 import * as session from 'express-session';
+import * as cookieParser from 'cookie-parser';
 import {passport} from './middlewares/passport';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';
@@ -20,6 +21,7 @@ export async function createApp(): Promise<Express> {
   const repository = getConnection().getRepository(Session);
 
   app.use(express.json());
+  app.use(cookieParser());
 
   const sessionSecret = process.env.SESSION_SECRET;
   if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
@@ -28,6 +30,7 @@ export async function createApp(): Promise<Express> {
 
   app.use(session({
     secret: sessionSecret,
+    name: 'sessionId',
     resave: false,
     saveUninitialized: false,
     store: new TypeormStore({

@@ -2,6 +2,7 @@ import {Router} from 'express';
 import {passport} from './middlewares/passport';
 import {getParkingSpots, postParkingSpot} from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
+import {User} from './entities/user';
 
 export function createRouter(): Router {
   const router = Router();
@@ -26,6 +27,15 @@ export function createRouter(): Router {
 function createAuthRouter(): Router {
   const router = Router();
 
+  router.use((req, res, next) => {
+    // Fixed redirect url should be configured for production
+    if (process.env.NODE_ENV === 'development' && req.query.redirectUrl) {
+      req.session!.redirectUrl = req.query.redirectUrl;
+    }
+    next();
+  });
+
+
   router.get(
     '/google/web',
     passport.authenticate('google-web', {scope: ['profile', 'email']})
@@ -49,14 +59,25 @@ function createAuthRouter(): Router {
     '/google/callback/mobile',
     // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
     passport.authenticate('google-mobile', {
-      successRedirect: process.env.MOBILE_LOGIN_SUCCESS_REDIRECT,
       failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
-    })
+    }), (req, res) => {
+      if (req.session!.redirectUrl) {
+        // Note: RedirectUrl param must be disabled or removed as this will otherwise cause serious security issues
+        res.redirect(req.session!.redirectUrl + `?sessionId=${req.cookies.sessionId}`);
+        req.session!.redirectUrl = undefined;
+      } else {
+        res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${req.cookies.sessionId}`);
+      }
+    }
   );
 
   router.get('/logout', (req, res) => {
     req.logout();
-    res.redirect('/');
+    res.json({
+      message: 'Successfully logged out'
+    });
+  });
+
   });
 
   return router;
