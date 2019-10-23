@@ -78,6 +78,19 @@ function createAuthRouter(): Router {
     });
   });
 
+  router.get('/login-state', (req, res) => {
+    const user = req.user as User;
+    if (!user) {
+      res.json({
+        isAuthenticated: false
+      });
+      return;
+    }
+    res.json({
+      isAuthenticated: true,
+      userRole: user.role,
+      name: user.name
+    });
   });
 
   return router;
