@@ -1,16 +1,16 @@
 import {Router} from 'express';
-import {passport} from './middlewares/passport';
 import {getParkingSpots, postParkingSpot} from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
+import {PassportStatic} from 'passport';
 
-export function createRouter(): Router {
+export function createRouter(passport: PassportStatic): Router {
   const router = Router();
 
   router.get('/parking-spots', asyncWrapper(getParkingSpots));
   router.post('/parking-spots', asyncWrapper(postParkingSpot));
 
-  router.use('/auth', createAuthRouter());
+  router.use('/auth', createAuthRouter(passport));
 
   // test route -- to be removed
   router.get('/test', (req, res) => {
@@ -24,7 +24,7 @@ export function createRouter(): Router {
   return router;
 }
 
-function createAuthRouter(): Router {
+function createAuthRouter(passport: PassportStatic): Router {
   const router = Router();
 
   router.use((req, res, next) => {

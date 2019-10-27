@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from 'cors';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
-import {passport} from './middlewares/passport';
+import {passport as passportDefaultConfig} from './middlewares/passport';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
@@ -11,7 +11,7 @@ import {ValidationError} from 'class-validator';
 import {Session} from './entities/session';
 import {TypeormStore} from 'connect-typeorm';
 
-export async function createApp(): Promise<Express> {
+export async function createApp(passport = passportDefaultConfig): Promise<Express> {
   if (getConnectionManager().connections.length === 0) {
     await createConnection();
   }
@@ -51,7 +51,7 @@ export async function createApp(): Promise<Express> {
     }));
   }
 
-  app.use('/api', createRouter());
+  app.use('/api', createRouter(passport));
 
   // 404 handler (none of the routes match)
   app.use(function(req, res, next) {
