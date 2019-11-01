@@ -3,12 +3,13 @@ import {getParkingSpots, postParkingSpot} from './controllers/parking-spot.contr
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport} from './middlewares/passport';
+import {adminRoleRequired} from './middlewares/auth.middleware';
 
 export function createRouter(): Router {
   const router = Router();
 
   router.get('/parking-spots', asyncWrapper(getParkingSpots));
-  router.post('/parking-spots', asyncWrapper(postParkingSpot));
+  router.post('/parking-spots', adminRoleRequired, asyncWrapper(postParkingSpot));
 
   router.use('/auth', createAuthRouter());
 

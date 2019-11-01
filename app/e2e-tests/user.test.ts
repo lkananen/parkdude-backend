@@ -5,21 +5,15 @@ import {Express} from 'express';
 import {createApp} from '../app';
 import {closeConnection} from '../test-utils/teardown';
 import {User, UserRole} from '../entities/user';
+import {loginWithUser} from '../test-utils/test-login';
 // import {PassportStatic} from 'passport';
 
-// Replace the passport setup we have by the mock setup
-const passportMock = require('./mocks/passport-mock');
-const StrategyMock = require('./mocks/strategy-mock');
 
-/*
 describe('Users (e2e)', () => {
-  let app: Express;
-  let passport: PassportStatic;
-  // const agent = superagent.agent();
+  let agent: request.SuperTest<request.Test>;
 
   beforeEach(async () => {
-    app = await createApp();
-    passport = passportMock;
+    agent = request.agent(await createApp());
   });
 
   afterEach(async () => {
@@ -30,14 +24,28 @@ describe('Users (e2e)', () => {
     await closeConnection();
   });
 
-  describe('GET /api/test', () => {
+  describe('GET /api/auth/login-state', () => {
     test('Should check logged out', async () => {
-      await request(app)
+      await agent
         .get('/api/auth/login-state')
         .expect({isAuthenticated: false});
     });
+
+
+    test('Should check logged in', async () => {
+      const user = User.create({
+        name: 'Tester',
+        email: 'tester@example.com',
+        role: UserRole.UNVERIFIED
+      });
+      await user.save();
+      await loginWithUser(agent, user);
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: true, userRole: UserRole.UNVERIFIED, name: user.name});
+    });
   });
-});*/
+});
 
 // Auxiliary function.
 /*
@@ -53,7 +61,7 @@ function createLoginCookie(done) {
     });
 }*/
 
-
+/*
 function createSession(agent: any) {
   return agent
     .get('/api/auth/login-state')
@@ -69,18 +77,11 @@ function createSession(agent: any) {
 }
 
 describe('Users logged in (e2e)', () => {
-  let app: Express;
+  let agent: request.SuperTest<request.Test>;
   let cookie: any;
 
   beforeEach(async () => {
-    app = await createApp();
-    const res: any = await request(app)
-      .get('/api/auth/google/web');
-
-    if (res.headers['set-cookie'] !== undefined) {
-      cookie = res.headers['set-cookie'][0].split(',').map((item: any) => item.split(';')[0]);
-      // await agent.jar.setCookies(cookie);
-    }
+    agent = request.agent(await createApp());
   });
 
   afterEach(async () => {
@@ -108,3 +109,4 @@ describe('Users logged in (e2e)', () => {
     });
   });
 });
+*/
