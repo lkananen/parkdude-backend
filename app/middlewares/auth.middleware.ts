@@ -1,7 +1,9 @@
 import {Request, Response, NextFunction} from 'express';
 import {UserRole, User} from '../entities/user';
 
-
+/**
+ * User must be logged in and they should have one of the verified roles
+ */
 export function loginRequired(req: Request, res: Response, next: NextFunction) {
   const user = req.user as User;
   if (user && [UserRole.VERIFIED, UserRole.ADMIN, UserRole.SLACK].includes(user.role)) {

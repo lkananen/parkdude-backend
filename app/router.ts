@@ -1,5 +1,9 @@
 import {Router} from 'express';
-import {getParkingSpots, postParkingSpot} from './controllers/parking-spot.controller';
+import {
+  getParkingSpots, postParkingSpot,
+  postUpdatedParkingSpot, deleteParkingspot,
+  getParkingSpot
+} from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport} from './middlewares/passport';
@@ -8,10 +12,18 @@ import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 export function createRouter(): Router {
   const router = Router();
 
+  router.use('/auth', createAuthRouter());
+
+  // All routes after this require login
+  router.use(loginRequired);
+
   router.get('/parking-spots', asyncWrapper(getParkingSpots));
   router.post('/parking-spots', adminRoleRequired, asyncWrapper(postParkingSpot));
 
-  router.use('/auth', createAuthRouter());
+  router.get('/parking-spots/:spotId', asyncWrapper(getParkingSpot));
+  router.post('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(postUpdatedParkingSpot));
+  router.delete('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(deleteParkingspot));
+
 
   router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
 

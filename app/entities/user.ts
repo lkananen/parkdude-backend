@@ -1,3 +1,4 @@
+import {UserData} from '../interfaces/user.interfaces';
 import {
   BaseEntity, Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn
@@ -38,4 +39,13 @@ export class User extends BaseEntity {
 
     @UpdateDateColumn()
     updated: Date;
+
+    toUserData(): UserData {
+      return {
+        id: this.id,
+        email: this.email,
+        name: this.name,
+        role: this.role
+      };
+    }
 }
