@@ -11,3 +11,22 @@ export interface UserData {
   name: string;
   role: UserRole;
 }
+
+export interface GetUsersResponse {
+  data: UserData[];
+}
+
+export interface GetUserResponse {
+  data: UserData;
+}
+
+export interface UserUpdateBody {
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+export interface PostUpdatedUserResponse {
+  data: UserData;
+  message: string;
+}

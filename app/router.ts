@@ -8,6 +8,7 @@ import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
+import {getUsers, getUser, postUpdatedUser, deleteUser} from './controllers/user.controller';
 
 export function createRouter(): Router {
   const router = Router();
@@ -23,6 +24,11 @@ export function createRouter(): Router {
   router.get('/parking-spots/:spotId', asyncWrapper(getParkingSpot));
   router.post('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(postUpdatedParkingSpot));
   router.delete('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(deleteParkingspot));
+
+  router.get('/users', adminRoleRequired, asyncWrapper(getUsers));
+  router.get('/users/:userId', adminRoleRequired, asyncWrapper(getUser));
+  router.get('/users/:userId', adminRoleRequired, asyncWrapper(postUpdatedUser));
+  router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteUser));
 
 
   router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
