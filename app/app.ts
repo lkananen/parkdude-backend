@@ -35,7 +35,7 @@ export async function createApp(): Promise<Express> {
     saveUninitialized: false,
     store: new TypeormStore({
       cleanupLimit: 2,
-      limitSubquery: false,
+      limitSubquery: true,
       ttl: 86400
     }).connect(repository),
   }));
