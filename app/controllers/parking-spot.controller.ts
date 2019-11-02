@@ -4,7 +4,7 @@ import {
   updateParkingSpot, fetchParkingspot
 } from '../services/parking-spot.service';
 import {
-  PostParkingSpotResponse, PostUpdatedParkingSpotResponse,
+  PostParkingSpotResponse, PutUpdatedParkingSpotResponse,
   GetParkingspotsResponse, ParkingSpotBody
 } from '../interfaces/parking-spot.interfaces';
 import {GenericResponse} from '../interfaces/general.interfaces';
@@ -38,10 +38,10 @@ export async function postParkingSpot(req: Request, res: Response) {
   res.status(201).json(json);
 }
 
-export async function postUpdatedParkingSpot(req: Request, res: Response) {
+export async function putUpdatedParkingSpot(req: Request, res: Response) {
   const data: ParkingSpotBody = req.body;
   const parkingSpot = await updateParkingSpot(req.params.id, data);
-  const json: PostUpdatedParkingSpotResponse = {
+  const json: PutUpdatedParkingSpotResponse = {
     message: 'Parking spot successfully updated.',
     data: parkingSpot.toParkingSpotData()
   };

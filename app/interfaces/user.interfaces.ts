@@ -26,7 +26,7 @@ export interface UserUpdateBody {
   role: UserRole;
 }
 
-export interface PostUpdatedUserResponse {
+export interface PutUpdatedUserResponse {
   data: UserData;
   message: string;
 }

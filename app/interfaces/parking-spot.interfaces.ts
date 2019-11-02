@@ -12,6 +12,11 @@ export interface ParkingSpotData {
   updated: Date;
 }
 
+export interface BasicParkingSpotData {
+  id: string;
+  name: string;
+}
+
 export interface GetParkingspotsResponse {
   data: ParkingSpotData[];
 }
@@ -25,7 +30,7 @@ export interface PostParkingSpotResponse {
   data: ParkingSpotData;
 }
 
-export interface PostUpdatedParkingSpotResponse {
+export interface PutUpdatedParkingSpotResponse {
   message: string;
   data: ParkingSpotData;
 }

@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import {
   GetUsersResponse, GetUserResponse,
-  UserUpdateBody, PostUpdatedUserResponse
+  UserUpdateBody, PutUpdatedUserResponse
 } from '../interfaces/user.interfaces';
 import {UserRole} from '../entities/user';
 import {GenericResponse} from '../interfaces/general.interfaces';
@@ -63,11 +63,11 @@ export async function getUser(req: Request, res: Response) {
   res.status(200).json(json);
 }
 
-export async function postUpdatedUser(req: Request, res: Response) {
+export async function putUpdatedUser(req: Request, res: Response) {
   // TODO: Implement
   const userId = req.params.userId;
   const data: UserUpdateBody = req.body;
-  const json: PostUpdatedUserResponse = {
+  const json: PutUpdatedUserResponse = {
     message: 'User successfully updated',
     data: {
       id: userId,
