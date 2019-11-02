@@ -20,6 +20,7 @@
     "sam-api": "cdk synth --no-staging > template.yaml && sam local start-api --docker-network=host",
     "typeorm": "ts-node ./node_modules/typeorm/cli.js",
     "typeorm:generate": "npm run typeorm migration:generate -- --dir app/migrations --config env/app.dev.env --name",
+    "typeorm:show": "npm run typeorm migration:show -- --config env/app.dev.env",
     "typeorm:migrate": "npm run typeorm migration:run -- --config env/app.dev.env",
     "typeorm:revert": "npm run typeorm migration:revert -- --config env/app.dev.env"
   },
