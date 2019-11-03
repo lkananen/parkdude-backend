@@ -1,7 +1,7 @@
 import passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 import {User} from '../entities/user';
-import {getOrCreateUser} from '../utils/helpers';
+import {getOrCreateUser} from '../services/user.service';
 import {Profile} from 'passport-google-oauth';
 export {passport};
 
@@ -21,7 +21,7 @@ passport.use('google-web', new GoogleStrategy({
 async function loginCallback(accessToken: string, refreshToken: string, profile: Profile,
   done: (err: any, user: User) => void) {
   const email: string = profile.emails![0].value;
-  const user = await getOrCreateUser(email, profile.displayName);
+  const user = await getOrCreateUser({email, name: profile.displayName});
   done(null, user);
 }
 

@@ -1,6 +1,6 @@
 import passport = require('passport');
 import {Request} from 'express';
-import {getOrCreateUser} from '../../utils/helpers';
+import {getOrCreateUser} from '../../services/user.service';
 
 export class StrategyMock extends passport.Strategy {
   private passAuthentication: boolean;
@@ -18,7 +18,7 @@ export class StrategyMock extends passport.Strategy {
   async authenticate(req: Request) {
     // If we specified authentication to pass
     if (this.passAuthentication) {
-      const user = await getOrCreateUser(this.email, this.username);
+      const user = await getOrCreateUser({email: this.email, name: this.username});
       this.success(user);
     } else {
       this.fail('Unauthorized');
