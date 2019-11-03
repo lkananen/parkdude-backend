@@ -65,7 +65,15 @@ function createAuthRouter(): Router {
     }
   );
 
+  // GET LOGOUT IS DEPRECATED
   router.get('/logout', (req, res) => {
+    req.logout();
+    res.json({
+      message: 'Successfully logged out'
+    });
+  });
+
+  router.post('/logout', (req, res) => {
     req.logout();
     res.json({
       message: 'Successfully logged out'

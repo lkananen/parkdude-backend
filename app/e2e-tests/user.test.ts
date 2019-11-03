@@ -154,5 +154,31 @@ describe('Users/authentication (e2e)', () => {
       await loginWithEmail(agent, 'new@example.com', 'Tester', false);
       expect(await fetchUsers()).toHaveLength(1);
     });
+
+    test('Logout should log out', async () => {
+      await loginWithEmail(agent, initialUser.email);
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
+      await agent
+        .get('/api/auth/logout')
+        .expect({message: 'Successfully logged out'});
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: false});
+    });
+
+    test('POST Logout should log out', async () => {
+      await loginWithEmail(agent, initialUser.email);
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
+      await agent
+        .post('/api/auth/logout')
+        .expect({message: 'Successfully logged out'});
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: false});
+    });
   });
 });
