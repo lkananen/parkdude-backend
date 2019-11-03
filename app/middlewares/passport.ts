@@ -1,7 +1,8 @@
 import passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-import {User, UserRole} from '../entities/user';
-
+import {User} from '../entities/user';
+import {getOrCreateUser} from '../utils/helpers';
+import {Profile} from 'passport-google-oauth';
 export {passport};
 
 // Register Google Passport strategy
@@ -17,26 +18,18 @@ passport.use('google-web', new GoogleStrategy({
   callbackURL: process.env.HOST + '/api/auth/google/callback'
 }, loginCallback));
 
-async function loginCallback(accessToken: any, refreshToken: any, profile: any, done: any) {
-  const email: string = profile._json.email;
-  let user = await User.findOne({email});
-
-  if (user === undefined) {
-    user = new User();
-    user.name = profile.displayName;
-    user.email = email;
-    user.role = email.endsWith('@innogiant.com') ? UserRole.VERIFIED : UserRole.UNVERIFIED;
-    await user.save();
-  }
+async function loginCallback(accessToken: string, refreshToken: string, profile: Profile,
+  done: (err: any, user: User) => void) {
+  const email: string = profile.emails![0].value;
+  const user = await getOrCreateUser(email, profile.displayName);
   done(null, user);
 }
 
-
 // Serialize user into the session cookie
-passport.serializeUser((user: User, done: any) => done(null, user.id));
+passport.serializeUser((user: User, done: (err: any, id: string) => void) => done(null, user.id));
 
 // Deserialize user from the session cookie
-passport.deserializeUser(async (id: string, done: any) =>{
+passport.deserializeUser(async (id: string, done: (err: any, user?: User) => void) => {
   const user = await User.findOne({id});
   done(null, user);
 });

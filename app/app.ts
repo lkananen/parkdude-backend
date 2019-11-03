@@ -25,7 +25,7 @@ export async function createApp(): Promise<Express> {
 
   const sessionSecret = process.env.SESSION_SECRET;
   if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
-    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set.');
+    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set and changed.');
   }
 
   app.use(session({
