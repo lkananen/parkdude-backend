@@ -1,22 +1,25 @@
 import passport = require('passport');
-import {User} from '../../entities/user';
 import {Request} from 'express';
+import {getOrCreateUser} from '../../utils/helpers';
 
 export class StrategyMock extends passport.Strategy {
   private passAuthentication: boolean;
-  private user: User;
+  private email: string;
+  private username: string;
 
-  constructor(options: {passAuthentication: boolean; user: User}) {
+  constructor(options: {passAuthentication: boolean; email: string; username?: string}) {
     super();
     this.name = 'google-web';
     this.passAuthentication = options.passAuthentication;
-    this.user = options.user;
+    this.email = options.email;
+    this.username = options.username? options.username : 'Test Tester';
   }
 
-  authenticate(req: Request) {
+  async authenticate(req: Request) {
     // If we specified authentication to pass
     if (this.passAuthentication) {
-      this.success(this.user);
+      const user = await getOrCreateUser(this.email, this.username);
+      this.success(user);
     } else {
       this.fail('Unauthorized');
     }

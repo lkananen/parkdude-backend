@@ -13,16 +13,7 @@ export function createRouter(): Router {
 
   router.use('/auth', createAuthRouter());
 
-  // test route -- to be removed
-  router.get('/test', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.send(req.user);
-    } else {
-      res.send('You need to login first');
-    }
-  });
-
-  router.get('/reserve-test', loginRequired, (req, res) => (res.send(201)));
+  router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
 
   return router;
 }

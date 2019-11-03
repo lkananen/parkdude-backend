@@ -22,7 +22,7 @@ export async function createAppWithAdminSession() {
   });
   await user.save();
 
-  await loginWithUser(agent, user);
+  await loginWithEmail(agent, user.email);
 
   return agent;
 }
@@ -30,14 +30,16 @@ export async function createAppWithAdminSession() {
 /**
  * Creates login session for the user. Session cookies are added to agent.
  */
-export async function loginWithUser(agent: request.SuperTest<request.Test>, user: User) {
-  mockLogin(user);
+export async function loginWithEmail(agent: request.SuperTest<request.Test>,
+  email: string, name?: string, passAuth?: boolean) {
+  mockLogin(email, name, passAuth);
   await agent.get('/api/auth/google/callback');
 }
 
-function mockLogin(user: User) {
+function mockLogin(email: string, username?: string, passAuth?: boolean) {
   passport.use('google-web', new StrategyMock({
-    passAuthentication: true,
-    user
+    passAuthentication: passAuth === undefined? true : passAuth,
+    email,
+    username
   }));
 }
