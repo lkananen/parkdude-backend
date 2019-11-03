@@ -3,7 +3,7 @@ import {getParkingSpots, postParkingSpot} from './controllers/parking-spot.contr
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport} from './middlewares/passport';
-import {adminRoleRequired} from './middlewares/auth.middleware';
+import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 
 export function createRouter(): Router {
   const router = Router();
@@ -21,6 +21,8 @@ export function createRouter(): Router {
       res.send('You need to login first');
     }
   });
+
+  router.get('/reserve-test', loginRequired, (req, res) => (res.send(201)));
 
   return router;
 }

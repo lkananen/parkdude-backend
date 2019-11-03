@@ -5,32 +5,81 @@ import {Express} from 'express';
 import {createApp} from '../app';
 import {closeConnection} from '../test-utils/teardown';
 import {User, UserRole} from '../entities/user';
-import {loginWithUser} from '../test-utils/test-login';
+import {loginWithUser, createAppWithAdminSession} from '../test-utils/test-login';
+import {adminRoleRequired} from '../middlewares/auth.middleware';
 // import {PassportStatic} from 'passport';
 
 
-describe('Users (e2e)', () => {
+describe('Users/authentication (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
-
-  beforeEach(async () => {
-    agent = request.agent(await createApp());
-  });
-
-  afterEach(async () => {
-    await User.clear();
-  });
 
   afterAll(async () => {
     await closeConnection();
   });
 
-  describe('GET /api/auth/login-state', () => {
+
+  describe('No user', () => {
+    beforeAll(async () => {
+      agent = request.agent(await createApp());
+    });
+
     test('Should check logged out', async () => {
       await agent
         .get('/api/auth/login-state')
         .expect({isAuthenticated: false});
     });
 
+    test('Should not be able to reserve spot', async () => {
+      await agent
+        .get('/api/reserve-test')
+        .expect(403);
+    });
+  });
+
+
+  describe('Unactivated user', () => {
+    let user: User;
+
+    beforeEach(async () => {
+      agent = request.agent(await createApp());
+      user = User.create({
+        name: 'Tester',
+        email: 'tester@example.com',
+        role: UserRole.UNVERIFIED
+      });
+      await user.save();
+      await loginWithUser(agent, user);
+    });
+    test('Should check logged in', async () => {
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: true, userRole: UserRole.UNVERIFIED, name: user.name});
+    });
+
+    test('Should not be able to reserve spot', async () => {
+      await agent
+        .get('/api/reserve-test')
+        .expect(401, {message: 'Verified account required.'});
+    });
+  });
+
+
+  // describe('Activated user')
+  // describe('Admin user')
+
+  describe('GET /api/auth/login-state', () => {
+    beforeEach(async () => {
+      agent = request.agent(await createApp());
+    });
+
+    afterEach(async () => {
+      await User.clear();
+    });
+    test('Should check logged out', async () => {
+      await agent
+        .get('/api/auth/login-state')
+        .expect({isAuthenticated: false});
+    });
 
     test('Should check logged in', async () => {
       const user = User.create({
@@ -44,69 +93,29 @@ describe('Users (e2e)', () => {
         .get('/api/auth/login-state')
         .expect({isAuthenticated: true, userRole: UserRole.UNVERIFIED, name: user.name});
     });
-  });
-});
 
-// Auxiliary function.
-/*
-function createLoginCookie(done) {
-  request(app)
-      .get('/api/auth/google/web');
-      .end(function(error, response) {
-      if (error) {
-        throw error;
-      }
-      const loginCookie = response.headers['set-cookie'];
-      done(loginCookie);
+    test('Should fail to add new parking spots', async () => {
+      await agent
+        .post('/api/parking-spots')
+        .send({name: 'spot1'})
+        .expect(403);
     });
-}*/
+  });
 
-/*
-function createSession(agent: any) {
-  return agent
-    .get('/api/auth/login-state')
-    .expect(200)
-    .then((res: any) => {
-      const cookie = res
-        .headers['set-cookie'][0]
-        .split(',')
-        .map((item: any) => item.split(';')[0]);
 
-      agent.jar.setCookies(cookie);
+  describe('Admin user tests', () => {
+    beforeEach(async () => {
+      agent = await createAppWithAdminSession();
     });
-}
+    afterEach(async () => {
+      await User.clear();
+    });
 
-describe('Users logged in (e2e)', () => {
-  let agent: request.SuperTest<request.Test>;
-  let cookie: any;
-
-  beforeEach(async () => {
-    agent = request.agent(await createApp());
-  });
-
-  afterEach(async () => {
-    await User.clear();
-  });
-
-  afterAll(async () => {
-    await closeConnection();
-  });
-
-  describe('GET /api/test', () => {
-    test('Should check logged in', async () => {
-      if (cookie !== undefined) {
-        await request(app)
-          .get('/api/auth/login-state')
-          .set('Cookie', cookie)
-          .expect({
-            isAuthenticated: true,
-            userRole: UserRole.VERIFIED,
-            name: 'Tester'
-          });
-      } else {
-        throw new Error('No cookie');
-      }
+    test('Should manage to add new parking spots', async () => {
+      await agent
+        .post('/api/parking-spots')
+        .send({name: 'spot1'})
+        .expect(201);
     });
   });
 });
-*/
