@@ -11,7 +11,7 @@ import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {getUsers, getUser, putUpdatedUser, deleteUser} from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations
-} from './controllers/parking-reservations.controller';
+} from './controllers/parking-reservation.controller';
 
 export function createRouter(): Router {
   const router = Router();
