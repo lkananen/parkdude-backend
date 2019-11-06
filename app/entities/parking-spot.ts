@@ -1,8 +1,9 @@
 import {Length, validateOrReject} from 'class-validator';
 import {
   BaseEntity, BeforeInsert, BeforeUpdate, Column,
-  CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn
+  CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, ManyToOne
 } from 'typeorm';
+import {User} from './user';
 
 
 @Entity()
@@ -19,12 +20,14 @@ export class ParkingSpot extends BaseEntity {
   }})
   name: string;
 
+  @ManyToOne(() => User, {nullable: true, onDelete: 'SET NULL'})
+  owner?: User;
+
   @CreateDateColumn()
   created: Date;
 
   @UpdateDateColumn()
   updated: Date;
-
 
   @BeforeInsert()
   @BeforeUpdate()
