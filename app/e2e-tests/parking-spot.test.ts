@@ -1,15 +1,14 @@
 import * as request from 'supertest';
-import {Express} from 'express';
-import {createApp} from '../app';
 import {ParkingSpot} from '../entities/parking-spot';
 import {ParkingSpotResponse} from '../interfaces/parking-spot.interfaces';
 import {closeConnection} from '../test-utils/teardown';
+import {createAppWithAdminSession} from '../test-utils/test-login';
 
 describe('Parking spots (e2e)', () => {
-  let app: Express;
+  let agent: request.SuperTest<request.Test>;
 
   beforeEach(async () => {
-    app = await createApp();
+    agent = await createAppWithAdminSession();
   });
 
   afterEach(async () => {
@@ -22,25 +21,25 @@ describe('Parking spots (e2e)', () => {
 
   describe('GET /api/parking-spots', () => {
     test('Should return no parking spots when there are\'t any', async () => {
-      await request(app)
+      await agent
         .get('/api/parking-spots')
         .expect(200, {data: []});
     });
 
     test('Should return parking-spots', async () => {
-      const parkingSpot1: ParkingSpotResponse = (await request(app)
+      const parkingSpot1: ParkingSpotResponse = (await agent
         .post('/api/parking-spots')
         .send({name: 'Parking spot 1'}))
         .body
         .data;
 
-      const parkingSpot2: ParkingSpotResponse = (await request(app)
+      const parkingSpot2: ParkingSpotResponse = (await agent
         .post('/api/parking-spots')
         .send({name: 'Parking spot 2'}))
         .body
         .data;
 
-      await request(app)
+      await agent
         .get('/api/parking-spots')
         .expect(200, {data: [parkingSpot1, parkingSpot2]});
     });
@@ -50,7 +49,7 @@ describe('Parking spots (e2e)', () => {
   describe('POST /api/parking-spots', () => {
     test('Should add parking spot', async () => {
       const name = 'Parking spot 1';
-      await request(app)
+      await agent
         .post('/api/parking-spots')
         .send({name})
         .expect(201)
@@ -65,7 +64,7 @@ describe('Parking spots (e2e)', () => {
 
     test('Should fail if name is missing', async () => {
       const expectedError = 'Name is required.';
-      await request(app)
+      await agent
         .post('/api/parking-spots')
         .send({})
         .expect(400, {
@@ -76,7 +75,7 @@ describe('Parking spots (e2e)', () => {
 
     test('Should fail if name is empty string', async () => {
       const expectedError = 'Name is required.';
-      await request(app)
+      await agent
         .post('/api/parking-spots')
         .send({name: ''})
         .expect(400, {
@@ -88,7 +87,7 @@ describe('Parking spots (e2e)', () => {
     test('Should fail if name is too long', async () => {
       const longName = 'T'.repeat(201);
       const expectedError = `Name ${longName} is too long (201 characters). Maximum length is 200.`;
-      await request(app)
+      await agent
         .post('/api/parking-spots')
         .send({name: longName})
         .expect(400, {
