@@ -1,7 +1,8 @@
 import {UserData} from '../interfaces/user.interfaces';
+import {ParkingSpot} from './parking-spot';
 import {
   BaseEntity, Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn
+  CreateDateColumn, UpdateDateColumn, OneToMany
 } from 'typeorm';
 
 export enum UserRole {
@@ -33,6 +34,11 @@ export class User extends BaseEntity {
       default: UserRole.UNVERIFIED
     })
     role: UserRole;
+
+    @OneToMany(() => ParkingSpot, (spot) => spot.owner, {
+      lazy: true
+    })
+    ownedParkingSpots: Promise<ParkingSpot[]>
 
     @CreateDateColumn()
     created: Date;

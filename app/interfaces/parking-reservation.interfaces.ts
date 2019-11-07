@@ -2,14 +2,21 @@ import {BasicParkingSpotData} from './parking-spot.interfaces';
 
 export interface GetReservationsCalendarResponse {
   calendar: CalendarEntry[];
-  totalSpaces: number;
-  userOwnsSpace: boolean;
+  ownedSpots: BasicParkingSpotData[];
 }
 
 export interface CalendarEntry {
   date: string;
   spacesReservedByUser: BasicParkingSpotData[];
   availableSpaces: number;
+}
+
+export interface Calendar {
+  dates: {
+    [date: string]: CalendarEntry;
+  };
+  startDate: string;
+  endDate: string;
 }
 
 // userId is used when admin does modifications. Defaults to current user.
