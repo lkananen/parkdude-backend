@@ -6,4 +6,6 @@ export default () => {
   dotenv.config({
     path: path.join(__dirname, '../../env/app.test.env')
   });
+  // Show bigger objects in console logs (including supertest diffs)
+  require('util').inspect.defaultOptions.depth = 20;
 };
