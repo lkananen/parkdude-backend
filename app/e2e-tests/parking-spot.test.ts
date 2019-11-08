@@ -12,7 +12,7 @@ describe('Parking spots (e2e)', () => {
   });
 
   afterEach(async () => {
-    await ParkingSpot.clear();
+    await ParkingSpot.delete({});
   });
 
   afterAll(async () => {

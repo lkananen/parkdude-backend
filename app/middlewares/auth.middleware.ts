@@ -9,7 +9,7 @@ export function loginRequired(req: Request, res: Response, next: NextFunction) {
   if (user && [UserRole.VERIFIED, UserRole.ADMIN, UserRole.SLACK].includes(user.role)) {
     next();
   } else {
-    const status = user ? 401 : 403;
+    const status = user ? 403 : 401;
     res.status(status).json({
       message: 'Verified account required.'
     });

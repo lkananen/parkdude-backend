@@ -6,15 +6,15 @@ jest.mock('../router');
 import * as routes from '../router';
 const {createRouter} = jest.requireActual('../router');
 
-import {createApp} from '../app';
 import {BadRequestError} from '../utils/errors';
 import {asyncWrapper} from '../middlewares/async-wrapper.middleware';
 import {closeConnection} from '../test-utils/teardown';
+import {createAppWithAdminSession} from '../test-utils/test-login';
 
 const createRouterMock = routes.createRouter as jest.Mock<typeof createRouter>;
 
 describe('App (e2e)', () => {
-  let app: Express;
+  let agent: request.SuperTest<request.Test>;
   let router: Router;
 
   beforeEach(async () => {
@@ -22,7 +22,7 @@ describe('App (e2e)', () => {
     // it can be referenced in tests
     router = createRouter();
     createRouterMock.mockReturnValue(router);
-    app = await createApp();
+    agent = await createAppWithAdminSession();
   });
 
   afterAll(async () => {
@@ -32,14 +32,14 @@ describe('App (e2e)', () => {
   describe('Error handling', () => {
     describe('404', () => {
       test('Should return 404 for non-existent path', async () => {
-        await request(app)
+        await agent
           .get('/api/non-existing-path')
           .expect(404)
           .expect({message: 'Content not found'});
       });
 
       test('Should return 404 for existing path which does not support method', async () => {
-        await request(app)
+        await agent
           .patch('/api/parking-spots')
           .expect(404)
           .expect({message: 'Content not found'});
@@ -59,7 +59,7 @@ describe('App (e2e)', () => {
         // Temporarily disable logger to make test output more readable
         const errorLogger = console.error;
         console.error = () => {};
-        await request(app)
+        await agent
           .get('/api/test-path')
           .expect(400, {message});
         console.error = errorLogger;
@@ -76,7 +76,7 @@ describe('App (e2e)', () => {
         // Temporarily disable logger to make test output more readable
         const errorLogger = console.error;
         console.error = () => {};
-        await request(app)
+        await agent
           .get('/api/test-path')
           .expect(500, {message: 'Internal server error'});
         console.error = errorLogger;
