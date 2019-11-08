@@ -14,6 +14,7 @@
     "test:coverage": "jest --runInBand --coverage",
     "test:watch": "jest --runInBand --watch",
     "lint": "eslint app/**/*.ts handlers/**/*.ts lib/**/*.ts bin/**/*.ts",
+    "lint:fix": "eslint --fix app/**/*.ts handlers/**/*.ts lib/**/*.ts bin/**/*.ts",
     "cdk": "cdk",
     "synth": "cdk synth",
     "local-synth": "cdk synth --no-staging > template.yaml",
