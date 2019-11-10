@@ -40,7 +40,7 @@ jobs:
       - run: npm test
 
       - run:
-        name: Run linter
-        command: |
-          set -ou pipefail
-          npm run lint
+          name: Run linter
+          command: |
+              set -ou pipefail
+              npm run lint
