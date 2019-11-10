@@ -3,7 +3,7 @@ import * as cors from 'cors';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
 import {passport} from './middlewares/passport';
-import {createRouter} from './router';
+import {createRouter } from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection, getConnectionManager, getConnection} from 'typeorm';
