@@ -25,6 +25,8 @@ jobs:
             - v1-dependencies-{{ checksum "package.json" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
+      
+      - setup_remote_docker
       - run: docker run --name parkdude-db -e POSTGRES_PASSWORD=password -p 5432:5432 -v parkdude-db-volume:/var/lib/postgresql/data -d postgres:11.5
       - run: npm install
 
