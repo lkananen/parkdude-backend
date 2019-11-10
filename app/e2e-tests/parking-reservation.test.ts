@@ -182,7 +182,6 @@ describe('Parking reservations (e2e)', () => {
       await parkingSpots[0].save();
 
       await DayRelease.create({
-        user,
         spot: parkingSpots[0],
         date: '2019-11-02'
       }).save();
@@ -214,7 +213,6 @@ describe('Parking reservations (e2e)', () => {
       await parkingSpots[0].save();
 
       await DayRelease.create({
-        user: user2,
         spot: parkingSpots[0],
         date: '2019-11-02'
       }).save();
@@ -243,13 +241,11 @@ describe('Parking reservations (e2e)', () => {
       await parkingSpots[0].save();
 
       await DayRelease.create({
-        user,
         spot: parkingSpots[0],
         date: '2019-11-02'
       }).save();
 
       await DayRelease.create({
-        user,
         spot: parkingSpots[0],
         date: '2019-11-03'
       }).save();
