@@ -37,7 +37,6 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
 
       - run: docker exec parkdude-db createdb -U postgres parkdude-test
-      - run: npm run typeorm:migrate
 
       # run tests!
       - run: npm test
