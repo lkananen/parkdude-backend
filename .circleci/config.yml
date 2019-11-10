@@ -38,4 +38,9 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}      
       
       - run: npm test
-      - run: npm run lint
+
+      - run:
+        name: Run linter
+        command: |
+        set -ou pipefail
+        npm run lint
