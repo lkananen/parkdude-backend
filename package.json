@@ -13,7 +13,7 @@
     "test": "jest --runInBand",
     "test:coverage": "jest --runInBand --coverage",
     "test:watch": "jest --runInBand --watch",
-    "lint": "eslint app/**/*.ts handlers/**/*.ts lib/**/*.ts bin/**/*.ts",
+    "lint": "eslint --ext .ts app/ lib/ bin/",
     "lint-test": "eslint app/app.ts",
     "lint:fix": "eslint --fix app/**/*.ts handlers/**/*.ts lib/**/*.ts bin/**/*.ts",
     "cdk": "cdk",
