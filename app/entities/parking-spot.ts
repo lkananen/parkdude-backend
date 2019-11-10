@@ -4,6 +4,7 @@ import {
   CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, ManyToOne
 } from 'typeorm';
 import {User} from './user';
+import {ParkingSpotData, BasicParkingSpotData} from '../interfaces/parking-spot.interfaces';
 
 
 @Entity()
@@ -33,5 +34,24 @@ export class ParkingSpot extends BaseEntity {
   @BeforeUpdate()
   async validate() {
     await validateOrReject(this);
+  }
+
+  toParkingSpotData(): ParkingSpotData {
+    const {id, name, owner, created, updated} = this;
+    return {
+      id,
+      name,
+      owner: owner && owner.toUserData(),
+      created,
+      updated
+    };
+  }
+
+  toBasicParkingSpotData(): BasicParkingSpotData {
+    const {id, name} = this;
+    return {
+      id,
+      name
+    };
   }
 }
