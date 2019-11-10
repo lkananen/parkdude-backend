@@ -25,7 +25,7 @@ jobs:
             - v1-dependencies-{{ checksum "package.json" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
+      - run: docker run --name parkdude-db -e POSTGRES_PASSWORD=password -p 5432:5432 -v parkdude-db-volume:/var/lib/postgresql/data -d postgres:11.5
       - run: npm install
 
       - save_cache:
@@ -33,8 +33,8 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      # rename env
-      - run: mv .test.env .env
+      - run: docker exec parkdude-db createdb -U postgres parkdude-test
+      - run: npm run typeorm:migrate
 
       # run tests!
       - run: npm test
