@@ -42,5 +42,5 @@ jobs:
       - run:
         name: Run linter
         command: |
-        set -ou pipefail
-        npm run lint
+          set -ou pipefail
+          npm run lint
