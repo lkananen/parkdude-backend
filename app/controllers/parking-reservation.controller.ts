@@ -3,10 +3,11 @@ import {
   GetReservationsCalendarResponse, PostReservationsBody,
   PostReservationsResponse, GetReservationsForDateResponse, MyReservationsResponse
 } from '../interfaces/parking-reservation.interfaces';
-import {fetchCalendar} from '../services/parking-reservation.service';
+import {fetchCalendar, fetchReservations, fetchReleases} from '../services/parking-reservation.service';
 import {User} from '../entities/user';
 import {BasicParkingSpotData} from '../interfaces/parking-spot.interfaces';
-import {validateDateRange} from '../utils/date';
+import {validateDateRange, toDateString} from '../utils/date';
+import {BadRequestError} from '../utils/errors';
 
 // Some limitation to the size of the requests
 const MAX_DATE_RANGE = 500;
@@ -20,7 +21,6 @@ export async function getReservationsCalendar(req: Request, res: Response) {
   const ownedSpots: BasicParkingSpotData[] = (await (req.user as User).ownedParkingSpots)
     .map((spot) => spot.toBasicParkingSpotData());
   const calendar = await fetchCalendar(startDate, endDate, req.user as User);
-  // TODO: Implementation
   const json: GetReservationsCalendarResponse = {
     calendar,
     ownedSpots
@@ -30,33 +30,19 @@ export async function getReservationsCalendar(req: Request, res: Response) {
 
 export async function getMyReservations(req: Request, res: Response) {
   // startDate defaults to current day (inclusive)
-  const {startDate, endDate} = req.query;
-  // TODO: Implementation
+  const {startDate = toDateString(new Date()), endDate} = req.query;
+  if (!endDate) {
+    throw new BadRequestError('startDate is required.');
+  }
+  validateDateRange(startDate, endDate, MAX_DATE_RANGE);
+  const ownedSpots: BasicParkingSpotData[] = (await (req.user as User).ownedParkingSpots)
+    .map((spot) => spot.toBasicParkingSpotData());
+  const reservations = await fetchReservations(startDate, endDate, req.user as User);
+  const releases = await fetchReleases(startDate, endDate, req.user as User);
   const json: MyReservationsResponse = {
-    ownedSpots: [{
-      id: '123-id',
-      name: '313'
-    }],
-    reservations: [{
-      date: '2019-11-30',
-      parkingSpot: {
-        id: '124-id',
-        name: '314'
-      }
-    }],
-    releases: [{
-      date: '2019-11-30',
-      parkingSpot: {
-        id: '123-id',
-        name: '313'
-      }
-    }, {
-      date: '2019-11-29',
-      parkingSpot: {
-        id: '123-id',
-        name: '313'
-      }
-    }]
+    ownedSpots,
+    reservations: reservations.map((reservation) => reservation.toReservationResponse()),
+    releases: releases.map((release) => release.toReleaseResponse())
   };
 
   res.status(200).json(json);

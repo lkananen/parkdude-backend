@@ -6,6 +6,7 @@ import {
 
 import {ParkingSpot} from './parking-spot';
 import {User} from './user';
+import {ReleaseResponse} from '../interfaces/parking-reservation.interfaces';
 
 
 @Entity()
@@ -32,5 +33,13 @@ export class DayRelease extends BaseEntity {
   @BeforeUpdate()
   async validate() {
     await validateOrReject(this);
+  }
+
+  toReleaseResponse(): ReleaseResponse {
+    const {date, spot} = this;
+    return {
+      date,
+      parkingSpot: spot.toBasicParkingSpotData()
+    };
   }
 }

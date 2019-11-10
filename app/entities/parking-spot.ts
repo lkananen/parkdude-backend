@@ -21,6 +21,9 @@ export class ParkingSpot extends BaseEntity {
   }})
   name: string;
 
+  @Column({nullable: true})
+  ownerId: string;
+
   @ManyToOne(() => User, (user) => user.ownedParkingSpots, {
     nullable: true,
     onDelete: 'SET NULL'

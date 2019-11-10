@@ -1,6 +1,6 @@
 import {ParkingSpot} from '../entities/parking-spot';
 import {getDateRange, toDateString} from '../utils/date';
-import {getConnection, EntityManager} from 'typeorm';
+import {getConnection, EntityManager, Between, OrderByCondition} from 'typeorm';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
 import {User} from '../entities/user';
@@ -124,4 +124,26 @@ async function addOwnReservationsToCalendar(
   for (const {spot, date} of ownParkingSpotReservations) {
     dates[date].spacesReservedByUser.push(spot.toBasicParkingSpotData());
   }
+}
+
+export async function fetchReservations(startDate: string, endDate: string, user?: User) {
+  const where = {
+    date: Between(startDate, endDate),
+    user: user
+  };
+  const relations = ['spot'];
+  const order: OrderByCondition = {
+    date: 'ASC'
+  };
+  return await DayReservation.find({where, relations, order});
+}
+
+export async function fetchReleases(startDate: string, endDate: string, user?: User) {
+  // Note: Not tested when user is not defined
+  return await DayRelease.createQueryBuilder('dayRelease')
+    .innerJoinAndSelect('dayRelease.spot', 'spot')
+    .where('dayRelease.date BETWEEN :startDate AND :endDate', {startDate, endDate})
+    .andWhere(user ? 'spot.ownerId = :userId' : '', {userId: user ? user.id : undefined})
+    .orderBy('dayRelease.date', 'ASC')
+    .getMany();
 }
