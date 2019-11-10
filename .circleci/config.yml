@@ -44,3 +44,5 @@ jobs:
           command: |
               set -ou pipefail
               npm run lint
+
+      - run: npm run lint-test
