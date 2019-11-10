@@ -63,7 +63,7 @@ describe('Users/authentication (e2e)', () => {
       await agent
         .post('/api/parking-spots')
         .send({name: 'spot1'})
-        .expect(402);
+        .expect(403);
     });
   });
 
