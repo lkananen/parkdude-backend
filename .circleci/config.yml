@@ -27,6 +27,7 @@ jobs:
             - v1-dependencies-
       
       - setup_remote_docker
+      - run: mv env/app.test.example.env env/app.test.env
       - run: docker run --name parkdude-db -e POSTGRES_PASSWORD=password -p 5432:5432 -v parkdude-db-volume:/var/lib/postgresql/data -d postgres:11.5
       - run: npm install
 
