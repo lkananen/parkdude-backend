@@ -27,14 +27,14 @@ describe('Users/authentication (e2e)', () => {
     test('Should not be able to reserve spot', async () => {
       await agent
         .get('/api/reserve-test')
-        .expect(403, {'message': 'Verified account required.'});
+        .expect(401, {'message': 'Verified account required.'});
     });
 
     test('Should fail to add new parking spots', async () => {
       await agent
         .post('/api/parking-spots')
         .send({name: 'spot1'})
-        .expect(403);
+        .expect(401);
     });
   });
 
@@ -56,7 +56,7 @@ describe('Users/authentication (e2e)', () => {
     test('Should not be able to reserve spot', async () => {
       await agent
         .get('/api/reserve-test')
-        .expect(401, {message: 'Verified account required.'});
+        .expect(403, {message: 'Verified account required.'});
     });
 
     test('Should fail to add new parking spots', async () => {
@@ -103,7 +103,7 @@ describe('Users/authentication (e2e)', () => {
       agent = await createAppWithAdminSession();
     });
     afterEach(async () => {
-      await User.clear();
+      await User.delete({});
     });
 
     test('Should be able to reserve spot', async () => {
@@ -133,7 +133,7 @@ describe('Users/authentication (e2e)', () => {
       await initialUser.save();
     });
     afterEach(async () => {
-      await User.clear();
+      await User.delete({});
     });
 
     test('Should be 1 user initially', async () => {
@@ -203,7 +203,7 @@ describe('Users/authentication (e2e)', () => {
     });
 
     afterAll(async () => {
-      await User.clear();
+      await User.delete({});
     });
 
     test('getUser should get user by email', async () => {

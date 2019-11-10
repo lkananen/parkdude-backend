@@ -1,6 +1,6 @@
 import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
-import {ParkingSpotResponse} from '../interfaces/parking-spot.interfaces';
+import {ParkingSpotData} from '../interfaces/parking-spot.interfaces';
 import {closeConnection} from '../test-utils/teardown';
 import {createAppWithAdminSession} from '../test-utils/test-login';
 
@@ -12,7 +12,7 @@ describe('Parking spots (e2e)', () => {
   });
 
   afterEach(async () => {
-    await ParkingSpot.clear();
+    await ParkingSpot.delete({});
   });
 
   afterAll(async () => {
@@ -27,13 +27,13 @@ describe('Parking spots (e2e)', () => {
     });
 
     test('Should return parking-spots', async () => {
-      const parkingSpot1: ParkingSpotResponse = (await agent
+      const parkingSpot1: ParkingSpotData = (await agent
         .post('/api/parking-spots')
         .send({name: 'Parking spot 1'}))
         .body
         .data;
 
-      const parkingSpot2: ParkingSpotResponse = (await agent
+      const parkingSpot2: ParkingSpotData = (await agent
         .post('/api/parking-spots')
         .send({name: 'Parking spot 2'}))
         .body
@@ -54,7 +54,7 @@ describe('Parking spots (e2e)', () => {
         .send({name})
         .expect(201)
         .expect((res) => {
-          const parkingSpot: ParkingSpotResponse = res.body.data;
+          const parkingSpot: ParkingSpotData = res.body.data;
           expect(parkingSpot.name).toEqual(name);
           expect(parkingSpot.id).toBeDefined();
           expect(new Date(parkingSpot.created) < new Date());

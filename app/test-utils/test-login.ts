@@ -12,7 +12,7 @@ export async function createAppWithAdminSession() {
   const agent = request.agent(app);
 
   // Clear existing users
-  await User.clear();
+  await User.delete({});
 
   // Add user to database
   const user = User.create({

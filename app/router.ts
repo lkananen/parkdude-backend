@@ -1,19 +1,53 @@
 import {Router} from 'express';
-import {getParkingSpots, postParkingSpot} from './controllers/parking-spot.controller';
+import {
+  getParkingSpots, postParkingSpot,
+  putUpdatedParkingSpot, deleteParkingspot,
+  getParkingSpot
+} from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
+import {getUsers, getUser, putUpdatedUser, deleteUser} from './controllers/user.controller';
+import {
+  getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations
+} from './controllers/parking-reservations.controller';
 
 export function createRouter(): Router {
   const router = Router();
 
+  router.use('/auth', createAuthRouter());
+
+  // All routes after this require login
+  router.use(loginRequired);
+
   router.get('/parking-spots', asyncWrapper(getParkingSpots));
   router.post('/parking-spots', adminRoleRequired, asyncWrapper(postParkingSpot));
 
-  router.use('/auth', createAuthRouter());
+  router.get('/parking-spots/:spotId', asyncWrapper(getParkingSpot));
+  router.put('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(putUpdatedParkingSpot));
+  router.delete('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(deleteParkingspot));
+
+  router.get('/users', adminRoleRequired, asyncWrapper(getUsers));
+  router.get('/users/:userId', adminRoleRequired, asyncWrapper(getUser));
+  router.put('/users/:userId', adminRoleRequired, asyncWrapper(putUpdatedUser));
+  router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteUser));
+
 
   router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
+  router.post('/parking-reservations', asyncWrapper(postReservations));
+  router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
+  router.get('/parking-reservations/my-reservations', asyncWrapper(getMyReservations));
+  router.get('/parking-reservations/days/:date', asyncWrapper(getReservationsForDate));
+
+  // test route -- to be removed
+  router.get('/test', (req, res) => {
+    if (req.isAuthenticated()) {
+      res.send(req.user);
+    } else {
+      res.send('You need to login first');
+    }
+  });
 
   return router;
 }

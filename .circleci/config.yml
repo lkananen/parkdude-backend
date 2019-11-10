@@ -6,13 +6,16 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
       - image: circleci/node:9.0.0
+      - image: postgres:11.5
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: parkdude-test
+          POSTGRES_PASSWORD: password
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
 
     working_directory: ~/parkdude-backend
 
@@ -26,6 +29,7 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
+      - run: mv env/app.test.example.env env/app.test.env && mv env/app.sam-dev.example.env env/app.sam-dev.env
       - run: npm install
 
       - save_cache:
@@ -33,5 +37,5 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      # run tests!
       - run: npm test
+      - run: npm run lint
