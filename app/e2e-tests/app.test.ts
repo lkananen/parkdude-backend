@@ -4,7 +4,7 @@ import {Express, Router} from 'express';
 
 jest.mock('../router');
 import * as routes from '../router';
-const {createRouter } = jest.requireActual('../router');
+const {createRouter} = jest.requireActual('../router');
 
 import {BadRequestError} from '../utils/errors';
 import {asyncWrapper} from '../middlewares/async-wrapper.middleware';
