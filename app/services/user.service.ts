@@ -9,6 +9,10 @@ export async function getUser({email}: UserBody): Promise <User | undefined> {
   return await User.findOne({email});
 }
 
+export async function fetchUser(id: string): Promise<User | undefined> {
+  return await User.findOne(id);
+}
+
 export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
   let user = await User.findOne({email});
   if (user === undefined) {

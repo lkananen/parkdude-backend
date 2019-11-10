@@ -1,8 +1,8 @@
 import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
 import {closeConnection} from '../test-utils/teardown';
-import {createAppWithAdminSession, TEST_USER_EMAIL} from '../test-utils/test-login';
-import {User} from '../entities/user';
+import {createAppWithAdminSession, TEST_USER_EMAIL, loginWithEmail} from '../test-utils/test-login';
+import {User, UserRole} from '../entities/user';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
 import {disableErrorLogs, enableErrorLogs} from '../test-utils/logger';
@@ -378,13 +378,10 @@ describe('Parking reservations (e2e)', () => {
         date: '2019-11-02'
       }).save();
 
-      console.warn('release',
-        await DayRelease.create({
-          spot: parkingSpots[1],
-          date: '2019-11-03'
-        }).save());
-
-      console.warn(await DayRelease.find({relations: ['spot', 'spot.owner']}));
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-11-03'
+      }).save();
 
       await agent.get('/api/parking-reservations/my-reservations?startDate=2019-11-02&endDate=2019-11-03')
         .expect(200, {
@@ -406,7 +403,8 @@ describe('Parking reservations (e2e)', () => {
     test('Should not show past reservations', async () => {
       parkingSpots[0].owner = user;
       parkingSpots[1].owner = user;
-      await Promise.all([parkingSpots[0].save(), parkingSpots[1].save()]);
+      await parkingSpots[0].save();
+      await parkingSpots[1].save();
 
       await DayReservation.create({
         user: user,
@@ -510,6 +508,443 @@ describe('Parking reservations (e2e)', () => {
           releases: [],
           ownedSpots: []
         });
+    });
+  });
+
+  describe('POST /api/parking-reservations', () => {
+    describe('Regular spots', () => {
+      test('Should reserve specific spot for user for specific day', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+      test('Should reserve specific spot for user for multiple days', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-03'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+      test('Should reserve from different spots if same is not (spot not specified)', async () => {
+        // Reserve some spots
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-03'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200);
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-02', '2019-11-03'],
+            parkingSpotId: parkingSpots[2].id
+          })
+          .expect(200);
+
+        // Each day should have different spot, since no others are available
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-03']
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+      });
+
+      test('Should reserve same spot if available when spot is not specified', async () => {
+        // Reserve some spots
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-03'],
+            parkingSpotId: parkingSpots[2].id
+          })
+          .expect(200);
+
+        // Spots 0 and 2 are not available for all days, so spot 1 should be selected
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-03']
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+      });
+
+      test('Should reserve spots in order of availability', async () => {
+      // Spot 0 is least available
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-03', '2019-11-05'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
+        // Spot 1 is second most available
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-04', '2019-11-07'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200);
+        // Spot 2 is most available
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-04', '2019-11-06'],
+            parkingSpotId: parkingSpots[2].id
+          })
+          .expect(200);
+
+        // Preference order: 2 -> 1 -> 0
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-03', '2019-11-04', '2019-11-05', '2019-11-06', '2019-11-07']
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-04',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-05',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-06',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-07',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+      });
+    });
+
+    describe('Owned spots', () => {
+      test('Should not be able to reserve spot owned by user', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(400, {
+            errorDates: ['2019-11-01'],
+            message: 'Reservation failed. There weren\'t available spots for some of the days.'
+          });
+      });
+
+      test('Should be able to reserve a released spot', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+      });
+
+      test('Should not be able to reserve owned spot released on different day', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-02'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(400, {
+            errorDates: ['2019-11-02'],
+            message: 'Reservation failed. There weren\'t available spots for some of the days.'
+          });
+      });
+
+      test('Should be able to reserve owned spot which has been reserved after release', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+
+        // Reserve released
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        // Reservation again fails
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(400, {
+            errorDates: ['2019-11-01'],
+            message: 'Reservation failed. There weren\'t available spots for some of the days.'
+          });
+      });
+
+      test('Should be able to reserve released owned spots and non-owned spots', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = user;
+        await parkingSpots[0].save();
+        await parkingSpots[1].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+        // Prepare: Reserve remaining non-owned spot for a day
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[2].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        // Should reserve from owned and non-owned spot
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02']
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+      });
+    });
+
+    describe('Reservation failure handling', () => {
+      test('Should fail to reserve same spot twice', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(400, {
+            errorDates: ['2019-11-01'],
+            message: 'Reservation failed. There weren\'t available spots for some of the days.'
+          });
+      });
+
+      test('Should fail to reserve same spot twice even when some days are available', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(400, {
+            errorDates: ['2019-11-01'],
+            message: 'Reservation failed. There weren\'t available spots for some of the days.'
+          });
+      });
+    });
+
+    describe('Input and permission error handling', () => {
+      beforeAll(() => {
+        disableErrorLogs();
+      });
+
+      afterAll(() => {
+        enableErrorLogs();
+      });
+
+      test('Should give 403 if non-admin tries to reserve for other user', async () => {
+        const verifiedUser = await User.create({
+          name: 'Tester 2',
+          email: 'tester2@example.com',
+          role: UserRole.VERIFIED
+        }).save();
+        await loginWithEmail(agent, verifiedUser.email);
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id,
+            userId: user.id
+          })
+          .expect(403, {message: 'Permission denied.'});
+      });
+
+      test('Should give 400 if dates is invalid', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(400, {message: 'dates is required.'});
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: [],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(400, {message: 'dates is required.'});
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: '2019-11-01',
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(400, {message: 'dates is required.'});
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01T12:00'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(400, {message: 'Dates must be in format YYYY-MM-DD.'});
+      });
     });
   });
 });

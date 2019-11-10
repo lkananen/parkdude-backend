@@ -20,7 +20,10 @@ export class DayReservation extends BaseEntity {
   @ManyToOne(() => User, {onDelete: 'CASCADE'})
   user: User;
 
-  @ManyToOne(() => ParkingSpot, {onDelete: 'CASCADE', nullable: false})
+  @Column()
+  spotId: string;
+
+  @ManyToOne(() => ParkingSpot, {onDelete: 'CASCADE', nullable: false, eager: true})
   spot: ParkingSpot;
 
   @Column({type: 'date'})

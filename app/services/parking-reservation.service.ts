@@ -1,10 +1,13 @@
 import {ParkingSpot} from '../entities/parking-spot';
 import {getDateRange, toDateString} from '../utils/date';
-import {getConnection, EntityManager, Between, OrderByCondition} from 'typeorm';
+import {getConnection, EntityManager, Between, OrderByCondition, SaveOptions} from 'typeorm';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
 import {User} from '../entities/user';
-import {CalendarEntry, Calendar} from '../interfaces/parking-reservation.interfaces';
+import {
+  CalendarEntry, Calendar, ParkingSpotDayStatus, QueriedParkingSpotDayStatus
+} from '../interfaces/parking-reservation.interfaces';
+import {ReservationFailedError} from '../utils/errors';
 
 /**
  * Returns reservation calendar for given date range, specialised to the user
@@ -146,4 +149,97 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
     .andWhere(user ? 'spot.ownerId = :userId' : '', {userId: user ? user.id : undefined})
     .orderBy('dayRelease.date', 'ASC')
     .getMany();
+}
+
+export async function reserveSpots(dates: string[], user: User, parkingSpotId?: string): Promise<DayReservation[]> {
+  return await getConnection().transaction(async (transactionManager) => {
+    // Get reservation/release information for each day there is reservation or release
+    // If parking spot has reservationDate = null, releaseDate = null, and ownerId = null,
+    // it is available for all days.
+    const spotStatuses = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
+      .leftJoin(DayReservation, 'dayReservation', 'dayReservation.spotId = spot.id')
+      .leftJoin(DayRelease, 'dayRelease', '"dayRelease"."spotId" = spot.id')
+      .leftJoin('spot.owner', 'owner')
+      // eslint-disable-next-line max-len
+      .select('spot.ownerId ownerId, spot.id spotId, dayReservation.date reservationDate, dayRelease.date releaseDate')
+      .where(parkingSpotId ? 'spot.id = :parkingSpotId' : '', {parkingSpotId})
+      .andWhere('(dayReservation.id IS NULL OR dayReservation.date IN (:...dates))', {dates})
+      .andWhere('(dayRelease.id IS NULL OR dayRelease.date IN (:...dates))', {dates})
+      .andWhere('((dayReservation.id IS NULL OR dayRelease.id IS NULL) OR dayReservation.date = dayRelease.date)')
+      .getRawMany()
+      .then((statuses: QueriedParkingSpotDayStatus[]) => statuses.map((status) => ({
+        ownerId: status.ownerid,
+        spotId: status.spotid,
+        reservationDate: status.reservationdate && toDateString(status.reservationdate),
+        releaseDate: status.releasedate && toDateString(status.releasedate)
+      })));
+
+    const availabilityBySpot = Object.values(getAvailabilityByParkingSpot(spotStatuses, dates));
+    // Order days by most available spot
+    // Note: This currently does not take overlap into account (e.g. "remaining" dates after most available spot)
+    availabilityBySpot.sort(
+      ({availabilityDates: days1}, {availabilityDates: days2}) => days1.length > days2.length ? -1 : 1
+    );
+
+    const availabilityByDate = Object.entries(getAvailabilityByDate(availabilityBySpot));
+    if (availabilityByDate.length !== dates.length) {
+      const failedDates = dates.filter((date) => !availabilityByDate.find(([availabledate]) => date === availabledate));
+      throw new ReservationFailedError('No available spot.', failedDates);
+    }
+
+    // Select first spot for each, which is most available due to previous sorting
+    const reservations = availabilityByDate.map(([date, spotIds]) => DayReservation.create({
+      date,
+      spotId: spotIds[0],
+      user
+    }));
+    const reservationIds = (await transactionManager.save(reservations)).map((reservation) => reservation.id);
+    // Must be fetched again to get full information
+    return await transactionManager.getRepository(DayReservation).findByIds(reservationIds, {order: {date: 'ASC'}});
+  });
+}
+
+/**
+ * Returns spotId <-> availableDate[] key-value object.
+ * Extracts reservations and releases from ParkingSpotDayStatus into one object for each parking spot,
+ * and determines which days overall are available for them.
+ */
+function getAvailabilityByParkingSpot(spotDayStatuses: ParkingSpotDayStatus[], dates: string[]) {
+  // parkingSpotId <-> date
+  const parkingSpotMap: {[id: string]: string[]} = {};
+  // Add reservation and release dates for each spot
+  for (const {spotId, reservationDate, releaseDate, ownerId} of spotDayStatuses) {
+    if (!parkingSpotMap[spotId]) {
+      parkingSpotMap[spotId] = ownerId === null ? [...dates] : [];
+    }
+    if (ownerId === null && reservationDate !== null) {
+      // Is reserved, -> remove from available days
+      parkingSpotMap[spotId] = parkingSpotMap[spotId].filter((date) => date !== reservationDate);
+    }
+    if (ownerId !== null && reservationDate === null && releaseDate !== null) {
+      // Owned by user, but released for the day
+      parkingSpotMap[spotId].push(releaseDate);
+    }
+  }
+  return Object.entries(parkingSpotMap).map(([spotId, availabilityDates]) => ({spotId, availabilityDates}));
+}
+
+/**
+ * Returns date <-> parkingSpotId[] key-value object
+ */
+function getAvailabilityByDate(
+  spotAvailabilityDates: {spotId: string; availabilityDates: string[]}[]
+): {[date: string]: string[]} {
+  const dateMap: {[date: string]: string[]} = {};
+  // Note: Because spots are ordered by number of availabilityDates,
+  // dateMap has them ordered by total availability
+  for (const {spotId, availabilityDates} of spotAvailabilityDates) {
+    for (const date of availabilityDates) {
+      if (!dateMap[date]) {
+        dateMap[date] = [];
+      }
+      dateMap[date].push(spotId);
+    }
+  }
+  return dateMap;
 }

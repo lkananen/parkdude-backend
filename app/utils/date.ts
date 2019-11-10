@@ -36,7 +36,6 @@ export function isValidDateString(date: string) {
   return isValidDate(new Date(date));
 }
 
-
 export function validateDateRange(startDate: string, endDate: string, maxRange: number) {
   if (!startDate || !endDate) {
     throw new BadRequestError('startDate and endDate are required.');

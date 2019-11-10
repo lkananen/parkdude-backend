@@ -3,11 +3,12 @@ import {
   GetReservationsCalendarResponse, PostReservationsBody,
   PostReservationsResponse, GetReservationsForDateResponse, MyReservationsResponse
 } from '../interfaces/parking-reservation.interfaces';
-import {fetchCalendar, fetchReservations, fetchReleases} from '../services/parking-reservation.service';
-import {User} from '../entities/user';
+import {fetchCalendar, fetchReservations, fetchReleases, reserveSpots} from '../services/parking-reservation.service';
+import {User, UserRole} from '../entities/user';
 import {BasicParkingSpotData} from '../interfaces/parking-spot.interfaces';
-import {validateDateRange, toDateString} from '../utils/date';
-import {BadRequestError} from '../utils/errors';
+import {validateDateRange, toDateString, isValidDateString} from '../utils/date';
+import {BadRequestError, ForbiddenError, ReservationFailedError} from '../utils/errors';
+import {fetchUser} from '../services/user.service';
 
 // Some limitation to the size of the requests
 const MAX_DATE_RANGE = 500;
@@ -68,28 +69,40 @@ export async function getReservationsForDate(req: Request, res: Response) {
 }
 
 export async function postReservations(req: Request, res: Response) {
-  // TODO: Implementation
-  const data: PostReservationsBody = req.body;
-  const json: PostReservationsResponse = {
-    reservations: [
-      {
-        date: '2019-11-05',
-        parkingSpot: {
-          id: '123-id',
-          name: '313'
-        }
-      }
-    ],
-    releases: [
-      {
-        date: '2019-11-04',
-        parkingSpot: {
-          id: '123-id',
-          name: '313'
-        }
-      }
-    ],
-    message: 'Spaces successfully reserved'
-  };
-  res.status(200).json(json);
+  const {dates, userId, parkingSpotId}: PostReservationsBody = req.body;
+  const user = req.user as User;
+  if (userId !== user.id && user.role !== UserRole.ADMIN) {
+    throw new ForbiddenError('Permission denied.');
+  }
+
+  if (!dates || !Array.isArray(dates) || dates.length === 0) {
+    throw new BadRequestError('dates is required.');
+  }
+
+  if (dates.some((date) => !isValidDateString(date) || date.length !== 10)) {
+    throw new BadRequestError('Dates must be in format YYYY-MM-DD.');
+  }
+
+  const reservingUser = userId ? await fetchUser(userId) : user;
+  if (!reservingUser) {
+    throw new BadRequestError('User with given id does not exist.');
+  }
+
+  try {
+    const reservations = await reserveSpots(dates, reservingUser, parkingSpotId);
+    const json: PostReservationsResponse = {
+      reservations: reservations.map((reservation) => reservation.toReservationResponse()),
+      message: 'Spots successfully reserved'
+    };
+    res.status(200).json(json);
+  } catch (err) {
+    if (err instanceof ReservationFailedError) {
+      res.status(400).json({
+        message: 'Reservation failed. There weren\'t available spots for some of the days.',
+        errorDates: err.dates
+      });
+    } else {
+      throw err;
+    }
+  }
 }

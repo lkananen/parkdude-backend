@@ -5,7 +5,6 @@ import {
 } from 'typeorm';
 
 import {ParkingSpot} from './parking-spot';
-import {User} from './user';
 import {ReleaseResponse} from '../interfaces/parking-reservation.interfaces';
 
 
@@ -16,7 +15,10 @@ export class DayRelease extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => ParkingSpot, {onDelete: 'CASCADE'})
+  @Column()
+  spotId: string;
+
+  @ManyToOne(() => ParkingSpot, {onDelete: 'CASCADE', nullable: false, eager: true})
   spot: ParkingSpot;
 
   @Column({type: 'date'})

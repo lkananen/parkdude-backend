@@ -21,9 +21,10 @@ export interface Calendar {
 
 // userId is used when admin does modifications. Defaults to current user.
 export interface PostReservationsBody {
-  userId: string | undefined;
-  reservations: ReservationBody[];
-  releases: ReleaseBody[];
+  dates: string[];
+  userId?: string;
+  // If not specified, spots can be different for different days, based on availability
+  parkingSpotId?: string;
 }
 
 export interface ReservationBody {
@@ -38,6 +39,10 @@ export interface ReleaseBody {
 
 export interface PostReservationsResponse {
   reservations: ReservationResponse[];
+  message: string;
+}
+
+export interface PostReleasesResponse {
   releases: ReleaseResponse[];
   message: string;
 }
@@ -64,4 +69,18 @@ export interface MyReservationsResponse {
   ownedSpots: BasicParkingSpotData[];
   reservations: ReservationResponse[];
   releases: ReleaseResponse[];
+}
+
+export interface ParkingSpotDayStatus {
+  ownerId: string | null;
+  spotId: string;
+  reservationDate: string | null;
+  releaseDate: string | null;
+}
+
+export interface QueriedParkingSpotDayStatus {
+  ownerid: string | null;
+  spotid: string;
+  reservationdate: Date | null;
+  releasedate: Date | null;
 }
