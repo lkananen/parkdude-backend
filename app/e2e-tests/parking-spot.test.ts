@@ -3,6 +3,7 @@ import {ParkingSpot} from '../entities/parking-spot';
 import {ParkingSpotData} from '../interfaces/parking-spot.interfaces';
 import {closeConnection} from '../test-utils/teardown';
 import {createAppWithAdminSession} from '../test-utils/test-login';
+import {disableErrorLogs, enableErrorLogs} from '../test-utils/logger';
 
 describe('Parking spots (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
@@ -62,38 +63,48 @@ describe('Parking spots (e2e)', () => {
         });
     });
 
-    test('Should fail if name is missing', async () => {
-      const expectedError = 'Name is required.';
-      await agent
-        .post('/api/parking-spots')
-        .send({})
-        .expect(400, {
-          message: `Validation failed:\n${expectedError}`,
-          errorMessages: [expectedError]
-        });
-    });
+    describe('Error handling', () => {
+      beforeAll(() => {
+        disableErrorLogs();
+      });
 
-    test('Should fail if name is empty string', async () => {
-      const expectedError = 'Name is required.';
-      await agent
-        .post('/api/parking-spots')
-        .send({name: ''})
-        .expect(400, {
-          message: `Validation failed:\n${expectedError}`,
-          errorMessages: [expectedError]
-        });
-    });
+      afterAll(() => {
+        enableErrorLogs();
+      });
 
-    test('Should fail if name is too long', async () => {
-      const longName = 'T'.repeat(201);
-      const expectedError = `Name ${longName} is too long (201 characters). Maximum length is 200.`;
-      await agent
-        .post('/api/parking-spots')
-        .send({name: longName})
-        .expect(400, {
-          message: `Validation failed:\n${expectedError}`,
-          errorMessages: [expectedError]
-        });
+      test('Should fail if name is missing', async () => {
+        const expectedError = 'Name is required.';
+        await agent
+          .post('/api/parking-spots')
+          .send({})
+          .expect(400, {
+            message: `Validation failed:\n${expectedError}`,
+            errorMessages: [expectedError]
+          });
+      });
+
+      test('Should fail if name is empty string', async () => {
+        const expectedError = 'Name is required.';
+        await agent
+          .post('/api/parking-spots')
+          .send({name: ''})
+          .expect(400, {
+            message: `Validation failed:\n${expectedError}`,
+            errorMessages: [expectedError]
+          });
+      });
+
+      test('Should fail if name is too long', async () => {
+        const longName = 'T'.repeat(201);
+        const expectedError = `Name ${longName} is too long (201 characters). Maximum length is 200.`;
+        await agent
+          .post('/api/parking-spots')
+          .send({name: longName})
+          .expect(400, {
+            message: `Validation failed:\n${expectedError}`,
+            errorMessages: [expectedError]
+          });
+      });
     });
   });
 });

@@ -9,3 +9,15 @@ export class BadRequestError extends StatusError {
     super(message, 400);
   }
 }
+
+export class ForbiddenError extends StatusError {
+  constructor(message = 'Permission denied.') {
+    super(message, 403);
+  }
+}
+
+export class ReservationFailedError extends Error {
+  constructor(message: string, public dates: string[]) {
+    super(message);
+  }
+}

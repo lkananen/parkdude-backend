@@ -11,7 +11,7 @@ import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {getUsers, getUser, putUpdatedUser, deleteUser} from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations
-} from './controllers/parking-reservations.controller';
+} from './controllers/parking-reservation.controller';
 
 export function createRouter(): Router {
   const router = Router();
@@ -37,6 +37,7 @@ export function createRouter(): Router {
   router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
+  router.get('/parking-reservations/parking-spot/:parkingSpotId/calendar', asyncWrapper(getReservationsCalendar));
   router.get('/parking-reservations/my-reservations', asyncWrapper(getMyReservations));
   router.get('/parking-reservations/days/:date', asyncWrapper(getReservationsForDate));
 

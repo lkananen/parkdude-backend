@@ -6,6 +6,7 @@ import {
 
 import {ParkingSpot} from './parking-spot';
 import {User} from './user';
+import {ReservationResponse} from '../interfaces/parking-reservation.interfaces';
 
 
 @Entity()
@@ -19,7 +20,10 @@ export class DayReservation extends BaseEntity {
   @ManyToOne(() => User, {onDelete: 'CASCADE'})
   user: User;
 
-  @ManyToOne(() => ParkingSpot, {onDelete: 'CASCADE'})
+  @Column()
+  spotId: string;
+
+  @ManyToOne(() => ParkingSpot, {onDelete: 'CASCADE', nullable: false, eager: true})
   spot: ParkingSpot;
 
   @Column({type: 'date'})
@@ -32,5 +36,13 @@ export class DayReservation extends BaseEntity {
   @BeforeUpdate()
   async validate() {
     await validateOrReject(this);
+  }
+
+  toReservationResponse(): ReservationResponse {
+    const {date, spot} = this;
+    return {
+      date,
+      parkingSpot: spot.toBasicParkingSpotData()
+    };
   }
 }
