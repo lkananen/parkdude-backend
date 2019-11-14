@@ -73,21 +73,19 @@ As long as `watch` and `sam-api` are active, all code changes are applied immedi
 
 ### Method 3: Deploy to AWS
 Prerequisites:
-- AWS CDK installation.
-  - `npm install -g aws-cdk`.
 - AWS CLI setup.
   - Installation can be done using for example pip: `pip install awscli`.
   - Create AWS CLI user credentials (only needed once, or when aws iam configurations are changed). For this step you need to login to console.aws.amazon.com and go to AWS IAM User section. Create a user with *programmatic access*. Save the user's security credentials.
     - Note! User needs to have administrator access to the resources it is creating or updating. Attach policies related to them or AdministratorAccess policy to the user.
   - Configure AWS CLI (only needed once, or when aws configurations are changed). Run CLI command `aws configure` and input the user credentials: *Access key ID*, *Secret Access Key* and region (*eu-north-1*).
 
-Deployment:
-1. Generate the CloudFormation code: `npm run synth` (only needed once, or when aws stack configurations are changed).
+First time deployment:
+1. Generate the CloudFormation code: `npm run synth`.
 2. `npm run watch`
 3. First time setup needs to create CDKToolkit as a CloudFormation stack. This can be done using `cdk bootstrap aws://${numeric-identifier}/eu-north-1`. The ${numeric-identifier} is the AWS Account identifier that can be found on the AWS console's IAM page in format 012345678912.
 4. Deploy the code to AWS using: `npm run deploy`.
 
-Updating changes:
+Updating changes to excisting stack:
 1. Re-generate the CloudFormation code: `npm run synth`.
 2. Deploy changes: `npm run deploy`.
 
