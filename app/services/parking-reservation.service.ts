@@ -9,14 +9,19 @@ import {
 } from '../interfaces/parking-reservation.interfaces';
 import {ReservationFailedError} from '../utils/errors';
 
+// Always true if condition to simplify conditional where queries
+const ALWAYS_TRUE = '1=1';
+
 /**
  * Returns reservation calendar for given date range, specialised to the user
  */
-export async function fetchCalendar(startDate: string, endDate: string, user: User): Promise<CalendarEntry[]> {
+export async function fetchCalendar(
+  startDate: string, endDate: string, user: User, parkingSpotId?: string
+): Promise<CalendarEntry[]> {
   return getConnection().transaction(async (transactionManager) => {
-    const calendar = await initialiseCalendar(transactionManager, startDate, endDate, user);
-    await applyReservationCountsToCalendar(calendar, transactionManager);
-    await applyReleasesToCalendar(calendar, transactionManager);
+    const calendar = await initialiseCalendar(transactionManager, startDate, endDate, user, parkingSpotId);
+    await applyReservationCountsToCalendar(calendar, transactionManager, parkingSpotId);
+    await applyReleasesToCalendar(calendar, transactionManager, parkingSpotId);
     await addOwnReservationsToCalendar(calendar, transactionManager, user);
 
     return Object.values(calendar.dates);
@@ -30,7 +35,8 @@ async function initialiseCalendar(
   transactionManager: EntityManager,
   startDate: string,
   endDate: string,
-  user: User
+  user: User,
+  parkingSpotId?: string
 ): Promise<Calendar> {
   const dateRange = getDateRange(new Date(startDate), new Date(endDate));
 
@@ -38,6 +44,7 @@ async function initialiseCalendar(
     .createQueryBuilder(ParkingSpot, 'parkingSpot')
     .leftJoin('parkingSpot.owner', 'owner')
     .where('owner.id is null')
+    .andWhere(parkingSpotId ? 'parkingSpot.id = :parkingSpotId' : ALWAYS_TRUE, {parkingSpotId})
     .getCount();
 
   // Initially: Mark all owned spots as "reserved" for all days
@@ -61,13 +68,15 @@ async function initialiseCalendar(
  */
 async function applyReservationCountsToCalendar(
   {startDate, endDate, dates}: Calendar,
-  transactionManager: EntityManager
+  transactionManager: EntityManager,
+  parkingSpotId?: string
 ) {
   const reservationCounts: {date: string; count: number}[] = await transactionManager
     .createQueryBuilder(DayReservation, 'dayReservation')
     .select('COUNT(*), dayReservation.date')
     .where(':startDate <= dayReservation.date', {startDate})
     .andWhere('dayReservation.date <= :endDate', {endDate})
+    .andWhere(parkingSpotId ? 'dayReservation.spotId = :parkingSpotId' : ALWAYS_TRUE, {parkingSpotId})
     .groupBy('dayReservation.date')
     .getRawMany()
     .then((counts) =>
@@ -87,13 +96,15 @@ async function applyReservationCountsToCalendar(
  */
 async function applyReleasesToCalendar(
   {startDate, endDate, dates}: Calendar,
-  transactionManager: EntityManager
+  transactionManager: EntityManager,
+  parkingSpotId?: string
 ) {
   const parkingSpotReleases = await transactionManager
     .createQueryBuilder(DayRelease, 'dayRelease')
     .innerJoinAndSelect('dayRelease.spot', 'spot')
     .where(':startDate <= dayRelease.date', {startDate})
     .andWhere('dayRelease.date <= :endDate', {endDate})
+    .andWhere(parkingSpotId ? 'dayRelease.spotId = :parkingSpotId' : ALWAYS_TRUE, {parkingSpotId})
     .getMany();
 
   for (const {date, spot} of parkingSpotReleases) {

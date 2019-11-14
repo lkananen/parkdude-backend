@@ -16,12 +16,13 @@ const MAX_DATE_RANGE = 500;
 export async function getReservationsCalendar(req: Request, res: Response) {
   // Date range is inclusive. Both days are required.
   const {startDate, endDate} = req.query;
+  const {parkingSpotId} = req.params;
 
   validateDateRange(startDate, endDate, MAX_DATE_RANGE);
 
   const ownedSpots: BasicParkingSpotData[] = (await (req.user as User).ownedParkingSpots)
     .map((spot) => spot.toBasicParkingSpotData());
-  const calendar = await fetchCalendar(startDate, endDate, req.user as User);
+  const calendar = await fetchCalendar(startDate, endDate, req.user as User, parkingSpotId);
   const json: GetReservationsCalendarResponse = {
     calendar,
     ownedSpots

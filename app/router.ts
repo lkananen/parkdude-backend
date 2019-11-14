@@ -37,6 +37,7 @@ export function createRouter(): Router {
   router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
+  router.get('/parking-reservations/parking-spot/:parkingSpotId/calendar', asyncWrapper(getReservationsCalendar));
   router.get('/parking-reservations/my-reservations', asyncWrapper(getMyReservations));
   router.get('/parking-reservations/days/:date', asyncWrapper(getReservationsForDate));
 
