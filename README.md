@@ -81,9 +81,8 @@ Prerequisites:
 
 First time deployment:
 1. Generate the CloudFormation code: `npm run synth`.
-2. `npm run watch`
-3. First time setup needs to create CDKToolkit as a CloudFormation stack. This can be done using `cdk bootstrap aws://${numeric-identifier}/eu-north-1`. The ${numeric-identifier} is the AWS Account identifier that can be found on the AWS console's IAM page in format 012345678912.
-4. Deploy the code to AWS using: `npm run deploy`.
+2. First time setup needs to create CDKToolkit as a CloudFormation stack. This can be done using `cdk bootstrap aws://${numeric-identifier}/eu-north-1`. The ${numeric-identifier} is the AWS Account identifier that can be found on the AWS console's IAM page in format 012345678912.
+3. Deploy the code to AWS using: `npm run deploy`.
 
 Updating changes to excisting stack:
 1. Re-generate the CloudFormation code: `npm run synth`.
