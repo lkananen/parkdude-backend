@@ -80,13 +80,15 @@ Prerequisites:
   - Configure AWS CLI (only needed once, or when aws configurations are changed). Run CLI command `aws configure` and input the user credentials: *Access key ID*, *Secret Access Key* and region (*eu-north-1*).
 
 First time deployment:
-1. Generate the CloudFormation code: `npm run synth`.
-2. First time setup needs to create CDKToolkit as a CloudFormation stack. This can be done using `cdk bootstrap aws://${numeric-identifier}/eu-north-1`. The ${numeric-identifier} is the AWS Account identifier that can be found on the AWS console's IAM page in format 012345678912.
-3. Deploy the code to AWS using: `npm run deploy`.
+1. Compile the code: `npm run build`.
+2. Synthesize an AWS CloudFormation template for the app: `npm run synth`.
+3. First time setup needs to create CDKToolkit as a CloudFormation stack. This can be done using `cdk bootstrap aws://${numeric-identifier}/eu-north-1`. The ${numeric-identifier} is the AWS Account identifier that can be found on the AWS console's IAM page in format 012345678912.
+4. Deploy the code to AWS using: `npm run deploy`.
 
 Updating changes to excisting stack:
-1. Re-generate the CloudFormation code: `npm run synth`.
-2. Deploy changes: `npm run deploy`.
+1. Compile the code: `npm run build`.
+2. Re-generate the CloudFormation template code: `npm run synth`.
+3. Deploy changes: `npm run deploy`.
 
 
 ## Database migrations
