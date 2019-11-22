@@ -90,12 +90,13 @@ function createAuthRouter(): Router {
     passport.authenticate('google-mobile', {
       failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
     }), (req, res) => {
+      const sessionId = encodeURIComponent(req.cookies.sessionId);
       if (req.session!.redirectUrl) {
         // Note: RedirectUrl param must be disabled or removed as this will otherwise cause serious security issues
-        res.redirect(req.session!.redirectUrl + `?sessionId=${req.cookies.sessionId}`);
+        res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}`);
         req.session!.redirectUrl = undefined;
       } else {
-        res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${req.cookies.sessionId}`);
+        res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${sessionId}`);
       }
     }
   );
