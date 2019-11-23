@@ -7,7 +7,7 @@ import {User} from '../entities/user';
 import {
   CalendarEntry, Calendar, ParkingSpotDayStatus, QueriedParkingSpotDayStatus
 } from '../interfaces/parking-reservation.interfaces';
-import {ReservationFailedError} from '../utils/errors';
+import {ReservationFailedError, ReleaseFailedError} from '../utils/errors';
 
 // Always true if condition to simplify conditional where queries
 const ALWAYS_TRUE = '1=1';
@@ -258,4 +258,101 @@ function getAvailabilityByDate(
     }
   }
   return dateMap;
+}
+
+export async function releaseSpots(dates: string[], user: User, parkingSpotId: string) {
+  return await getConnection().transaction(async (transactionManager) => {
+    const parkingSpot = await transactionManager.getRepository(ParkingSpot).findOneOrFail(parkingSpotId);
+    const spotStatuses: ParkingSpotDayStatus[] = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
+      .leftJoin(DayReservation, 'dayReservation', 'dayReservation.spotId = spot.id')
+      .leftJoin(DayRelease, 'dayRelease', '"dayRelease"."spotId" = spot.id')
+      .leftJoin('spot.owner', 'owner')
+      .select(
+        'spot.ownerId ownerId, spot.id spotId, ' +
+        'dayReservation.date reservationDate, dayReservation.id reservationId, ' +
+        'dayReservation.userId reserverId, ' +
+        'dayRelease.date releaseDate, dayRelease.id releaseId'
+      )
+      .where('spot.id = :parkingSpotId', {parkingSpotId})
+      .andWhere('(dayReservation.id IS NULL OR dayReservation.date IN (:...dates))', {dates})
+      .andWhere('(dayRelease.id IS NULL OR dayRelease.date IN (:...dates))', {dates})
+      .andWhere('(dayReservation.id IS NULL OR dayRelease.id IS NULL OR dayReservation.date = dayRelease.date)')
+      .getRawMany()
+      .then((statuses: QueriedParkingSpotDayStatus[]) => statuses.map((status) => ({
+        ownerId: status.ownerid,
+        spotId: status.spotid,
+        reservationId: status.reservationid,
+        reserverId: status.reserverid,
+        releaseId: status.releaseid,
+        date: (status.reservationdate && toDateString(status.reservationdate)) ||
+              (status.releasedate && toDateString(status.releasedate))
+      })));
+
+    if (spotStatuses.length === 1 && !spotStatuses[0].date) {
+      // Spot does not have any releases or reservations for any of the days, making date null
+      // In these cases remove the status, so that date is never null
+      spotStatuses.pop();
+    }
+
+    // These are not given in joins, so needs to be added separately
+    const spotStatusesWithoutReleasesOrReservations = dates
+      .filter((dateToFilter) => !spotStatuses.some(({date}) => date === dateToFilter))
+      .map((date) => ({
+        ownerId: parkingSpot.ownerId,
+        spotId: parkingSpot.id,
+        date
+      }));
+    spotStatuses.push(...spotStatusesWithoutReleasesOrReservations);
+
+    validateReleases(spotStatuses, user);
+
+    // Sort for error response purposes
+    spotStatuses.sort(({date: date1}, {date: date2}) => date1! < date2! ? 1 : -1);
+
+    const reservationIdsToCancel = getReservationIdsToCancel(spotStatuses);
+    const releasesToAdd = getReleasesToAdd(spotStatuses);
+
+    if (reservationIdsToCancel.length) {
+      await transactionManager.getRepository(DayReservation).delete(reservationIdsToCancel);
+    }
+    if (releasesToAdd.length) {
+      await transactionManager.save(releasesToAdd);
+    }
+  });
+}
+
+function validateReleases(parkingSpotStatuses: ParkingSpotDayStatus[], user: User) {
+  const invalidReleases = parkingSpotStatuses.filter((spotStatus) => !canReleaseSpot(spotStatus, user));
+  if (invalidReleases.length !== 0) {
+    throw new ReleaseFailedError(
+      'Parking spot does not have reservation, and cannot be released.',
+      invalidReleases.map(({date}) => date!)
+    );
+  }
+}
+
+function canReleaseSpot(parkingSpotStatus: ParkingSpotDayStatus, user: User): boolean {
+  if (parkingSpotStatus.reservationId) {
+    // Normal reservation by user
+    return parkingSpotStatus.reserverId === user.id || user.isAdmin;
+  }
+  if (parkingSpotStatus.ownerId === user.id || (parkingSpotStatus.ownerId && user.isAdmin)) {
+    // Owned spot by user
+    return true;
+  }
+  // Is not reserved/owned by user
+  return false;
+}
+
+function getReservationIdsToCancel(parkingSpotStatuses: ParkingSpotDayStatus[]): string[] {
+  return parkingSpotStatuses
+    .filter(({reservationId}) => !!reservationId)
+    .map(({reservationId}) => reservationId) as string[];
+}
+
+function getReleasesToAdd(parkingSpotStatuses: ParkingSpotDayStatus[]) {
+  // Releases only for days without normal reservations, which are instead removed
+  return parkingSpotStatuses
+    .filter(({reservationId}) => !reservationId)
+    .map(({date, spotId}) => DayRelease.create({date: date!, spotId}));
 }

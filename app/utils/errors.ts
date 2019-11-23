@@ -21,3 +21,9 @@ export class ReservationFailedError extends Error {
     super(message);
   }
 }
+
+export class ReleaseFailedError extends Error {
+  constructor(message: string, public dates: string[]) {
+    super(message);
+  }
+}

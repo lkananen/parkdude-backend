@@ -12,6 +12,7 @@ describe('Parking reservations (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
   let parkingSpots: ParkingSpot[];
   let user: User;
+  let user2: User;
 
   beforeEach(async () => {
     agent = await createAppWithNormalSession();
@@ -21,6 +22,11 @@ describe('Parking reservations (e2e)', () => {
       ParkingSpot.create({name: 'test space 3'}).save()
     ]);
     user = await User.findOneOrFail({email: TEST_USER_EMAIL});
+    user2 = await User.create({
+      name: 'Tester 2',
+      email: 'tester2@example.com',
+      role: UserRole.VERIFIED}
+    ).save();
   });
 
   afterEach(async () => {
@@ -208,7 +214,6 @@ describe('Parking reservations (e2e)', () => {
     });
 
     test('Should show other user\'s released spots as free', async () => {
-      const user2 = await User.create({name: 'Tester 2', email: 'tester2@example.com'}).save();
       parkingSpots[0].owner = user2;
       await parkingSpots[0].save();
 
@@ -287,7 +292,6 @@ describe('Parking reservations (e2e)', () => {
     });
 
     test('Should not show other reservations as free', async () => {
-      const user2 = await User.create({name: 'Tester 2', email: 'tester2@example.com'}).save();
       parkingSpots[0].owner = user2;
       await parkingSpots[0].save();
 
@@ -474,7 +478,6 @@ describe('Parking reservations (e2e)', () => {
     });
 
     test('Should show permanent space reserved by others as unavailable', async () => {
-      const user2 = await User.create({name: 'Tester 2', email: 'tester2@example.com'}).save();
       parkingSpots[0].owner = user2;
       await parkingSpots[0].save();
 
@@ -656,7 +659,6 @@ describe('Parking reservations (e2e)', () => {
     });
 
     test('Should not show another user\'s reservations or spots', async () => {
-      const user2 = await User.create({name: 'Tester 2', email: 'tester2@example.com'}).save();
       parkingSpots[0].owner = user2;
       parkingSpots[1].owner = user2;
       await Promise.all([parkingSpots[0].save(), parkingSpots[1].save()]);
@@ -1171,6 +1173,270 @@ describe('Parking reservations (e2e)', () => {
             parkingSpotId: parkingSpots[1].id
           })
           .expect(400, {message: 'Dates must be in format YYYY-MM-DD.'});
+      });
+    });
+  });
+
+  describe('DELETE /api/parking-spot/:parkingSpotId', () => {
+    describe('Normal reservations', () => {
+      test('Should remove normal reservation', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+      test('Should not remove reservations from other days', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-03'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01,2019-11-03`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [{
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+      test('Should not remove reservations from other users', async () => {
+        await DayReservation.create({
+          user: user2,
+          spot: parkingSpots[1],
+          date: '2019-11-01'
+        }).save();
+
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(400, {
+            message: 'Parking spot does not have reservation, and cannot be released.',
+            errorDates: ['2019-11-01']
+          });
+
+
+        await loginWithEmail(agent, user2.email);
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+
+      test('Should remove reservations from other users with admin role', async () => {
+        const user2 = await User.create({
+          name: 'Tester 2',
+          email: 'tester2@example.com',
+          role: UserRole.VERIFIED}
+        ).save();
+        await DayReservation.create({
+          user: user2,
+          spot: parkingSpots[1],
+          date: '2019-11-01'
+        }).save();
+
+        user.role = UserRole.ADMIN;
+        await user.save();
+
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await loginWithEmail(agent, user2.email);
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+      test('Should give error when there is no reservation', async () => {
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01,2019-11-02`)
+          .expect(400, {
+            message: 'Parking spot does not have reservation, and cannot be released.',
+            errorDates: ['2019-11-01', '2019-11-02']
+          });
+      });
+    });
+
+    describe('Owned parking spots', () => {
+      test('Should release owned spots', async () => {
+        parkingSpots[1].owner = user;
+        await parkingSpots[1].save();
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            ownedSpots: [
+              parkingSpots[1].toBasicParkingSpotData()
+            ]
+          });
+      });
+
+      test('Should not release another user\'s owned spots', async () => {
+        parkingSpots[1].owner = user2;
+        await parkingSpots[1].save();
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(400, {
+            message: 'Parking spot does not have reservation, and cannot be released.',
+            errorDates: ['2019-11-01']
+          });
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+
+      test('Should release another user\'s owned spot with admin role', async () => {
+        parkingSpots[1].owner = user2;
+        await parkingSpots[1].save();
+
+        user.role = UserRole.ADMIN;
+        await user.save();
+
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await loginWithEmail(agent, user2.email);
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            ownedSpots: [
+              parkingSpots[1].toBasicParkingSpotData()
+            ]
+          });
+      });
+
+
+      test('Should delete reservation on released spot', async () => {
+        parkingSpots[1].owner = user2;
+        await parkingSpots[1].save();
+
+        await loginWithEmail(agent, user2.email);
+
+        // Create release
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await loginWithEmail(agent, user.email);
+
+        // Reserve
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            releases: [],
+            ownedSpots: []
+          });
+
+        // Remove reservation
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-01`)
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [],
+            ownedSpots: []
+          });
+      });
+    });
+
+    describe('General error handling', () => {
+      beforeAll(() => {
+        disableErrorLogs();
+      });
+
+      afterAll(() => {
+        enableErrorLogs();
+      });
+
+      test('Should give 400 if dates is missing', async () => {
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}`)
+          .expect(400, {message: 'dates is required.'});
+      });
+
+      test('Should give 400 if date is invalid', async () => {
+        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=abc,efg`)
+          .expect(400, {message: 'Dates must be in format YYYY-MM-DD.'});
+      });
+
+      test('Should give 404 if parking spot does not exist', async () => {
+        await agent.delete(
+          '/api/parking-reservations/parking-spot/5e744477-c573-4856-9947-ec2500c7c0e2?dates=2019-11-01'
+        )
+          .expect(404, {message: 'Entity not found.'});
       });
     });
   });

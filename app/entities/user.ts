@@ -46,6 +46,10 @@ export class User extends BaseEntity {
     @UpdateDateColumn()
     updated: Date;
 
+    get isAdmin() {
+      return this.role === UserRole.ADMIN;
+    }
+
     toUserData(): UserData {
       return {
         id: this.id,

@@ -42,9 +42,19 @@ export interface PostReservationsResponse {
   message: string;
 }
 
-export interface PostReleasesResponse {
-  releases: ReleaseResponse[];
+export interface DeleteReservationsResponse {
   message: string;
+}
+
+export interface ReservationResponse {
+  date: string;
+  parkingSpot: BasicParkingSpotData;
+}
+
+
+export interface DeleteReservationsFailureResponse {
+  message: string;
+  errorDates: string[];
 }
 
 export interface ReservationResponse {
