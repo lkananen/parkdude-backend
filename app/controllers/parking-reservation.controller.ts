@@ -80,7 +80,7 @@ export async function postReservations(req: Request, res: Response) {
     throw new BadRequestError('dates is required.');
   }
 
-  if (dates.some((date) => !isValidDateString(date) || date.length !== 10)) {
+  if (dates.some((date) => !isValidDateString(date))) {
     throw new BadRequestError('Dates must be in format YYYY-MM-DD.');
   }
 
