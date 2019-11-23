@@ -1134,12 +1134,7 @@ describe('Parking reservations (e2e)', () => {
       });
 
       test('Should give 403 if non-admin tries to reserve for other user', async () => {
-        const verifiedUser = await User.create({
-          name: 'Tester 2',
-          email: 'tester2@example.com',
-          role: UserRole.VERIFIED
-        }).save();
-        await loginWithEmail(agent, verifiedUser.email);
+        await loginWithEmail(agent, user2.email);
         await agent.post('/api/parking-reservations')
           .send({
             dates: ['2019-11-01'],
@@ -1265,11 +1260,6 @@ describe('Parking reservations (e2e)', () => {
 
 
       test('Should remove reservations from other users with admin role', async () => {
-        const user2 = await User.create({
-          name: 'Tester 2',
-          email: 'tester2@example.com',
-          role: UserRole.VERIFIED}
-        ).save();
         await DayReservation.create({
           user: user2,
           spot: parkingSpots[1],
