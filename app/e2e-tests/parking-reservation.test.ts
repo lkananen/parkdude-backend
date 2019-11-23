@@ -1,7 +1,7 @@
 import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
 import {closeConnection} from '../test-utils/teardown';
-import {createAppWithAdminSession, TEST_USER_EMAIL, loginWithEmail} from '../test-utils/test-login';
+import {TEST_USER_EMAIL, loginWithEmail, createAppWithNormalSession} from '../test-utils/test-login';
 import {User, UserRole} from '../entities/user';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
@@ -14,7 +14,7 @@ describe('Parking reservations (e2e)', () => {
   let user: User;
 
   beforeEach(async () => {
-    agent = await createAppWithAdminSession();
+    agent = await createAppWithNormalSession();
     parkingSpots = await Promise.all([
       ParkingSpot.create({name: 'test space 1'}).save(),
       ParkingSpot.create({name: 'test space 2'}).save(),

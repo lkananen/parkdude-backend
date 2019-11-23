@@ -72,7 +72,7 @@ export async function getReservationsForDate(req: Request, res: Response) {
 export async function postReservations(req: Request, res: Response) {
   const {dates, userId, parkingSpotId}: PostReservationsBody = req.body;
   const user = req.user as User;
-  if (userId !== user.id && user.role !== UserRole.ADMIN) {
+  if (userId && userId !== user.id && user.role !== UserRole.ADMIN) {
     throw new ForbiddenError('Permission denied.');
   }
 
