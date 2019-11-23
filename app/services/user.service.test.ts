@@ -20,6 +20,10 @@ describe('User service', () => {
       email: 'test2@example.com',
       role: UserRole.UNVERIFIED
     }).save();
+
+    // Passwords are not selected by default, so set them as undefined for equals to match
+    user1.password = undefined;
+    user2.password = undefined;
   });
 
   afterAll(async () => {
