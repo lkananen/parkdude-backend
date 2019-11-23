@@ -157,7 +157,7 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
   return await DayRelease.createQueryBuilder('dayRelease')
     .innerJoinAndSelect('dayRelease.spot', 'spot')
     .where('dayRelease.date BETWEEN :startDate AND :endDate', {startDate, endDate})
-    .andWhere(user ? 'spot.ownerId = :userId' : '', {userId: user ? user.id : undefined})
+    .andWhere(user ? 'spot.ownerId = :userId' : ALWAYS_TRUE, {userId: user ? user.id : undefined})
     .orderBy('dayRelease.date', 'ASC')
     .getMany();
 }
@@ -165,15 +165,18 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
 export async function reserveSpots(dates: string[], user: User, parkingSpotId?: string): Promise<DayReservation[]> {
   return await getConnection().transaction(async (transactionManager) => {
     // Get reservation/release information for each day there is reservation or release
-    // If parking spot has reservationDate = null, releaseDate = null, and ownerId = null,
+    // If parking spot has reservationId = null, releaseId = null, and ownerId = null,
     // it is available for all days.
-    const spotStatuses = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
+    const spotStatuses: ParkingSpotDayStatus[] = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
       .leftJoin(DayReservation, 'dayReservation', 'dayReservation.spotId = spot.id')
       .leftJoin(DayRelease, 'dayRelease', '"dayRelease"."spotId" = spot.id')
       .leftJoin('spot.owner', 'owner')
-      // eslint-disable-next-line max-len
-      .select('spot.ownerId ownerId, spot.id spotId, dayReservation.date reservationDate, dayRelease.date releaseDate')
-      .where(parkingSpotId ? 'spot.id = :parkingSpotId' : '', {parkingSpotId})
+      .select(
+        'spot.ownerId ownerId, spot.id spotId, ' +
+        'dayReservation.date reservationDate, dayReservation.id reservationId, ' +
+        'dayRelease.date releaseDate, dayRelease.id releaseId'
+      )
+      .where(parkingSpotId ? 'spot.id = :parkingSpotId' : ALWAYS_TRUE, {parkingSpotId})
       .andWhere('(dayReservation.id IS NULL OR dayReservation.date IN (:...dates))', {dates})
       .andWhere('(dayRelease.id IS NULL OR dayRelease.date IN (:...dates))', {dates})
       .andWhere('((dayReservation.id IS NULL OR dayRelease.id IS NULL) OR dayReservation.date = dayRelease.date)')
@@ -181,8 +184,10 @@ export async function reserveSpots(dates: string[], user: User, parkingSpotId?: 
       .then((statuses: QueriedParkingSpotDayStatus[]) => statuses.map((status) => ({
         ownerId: status.ownerid,
         spotId: status.spotid,
-        reservationDate: status.reservationdate && toDateString(status.reservationdate),
-        releaseDate: status.releasedate && toDateString(status.releasedate)
+        reservationId: status.reservationid,
+        releaseId: status.releaseid,
+        date: (status.reservationdate && toDateString(status.reservationdate)) ||
+              (status.releasedate && toDateString(status.releasedate))
       })));
 
     const availabilityBySpot = Object.values(getAvailabilityByParkingSpot(spotStatuses, dates));
@@ -219,17 +224,17 @@ function getAvailabilityByParkingSpot(spotDayStatuses: ParkingSpotDayStatus[], d
   // parkingSpotId <-> date
   const parkingSpotMap: {[id: string]: string[]} = {};
   // Add reservation and release dates for each spot
-  for (const {spotId, reservationDate, releaseDate, ownerId} of spotDayStatuses) {
+  for (const {spotId, reservationId, releaseId, date: statusDate, ownerId} of spotDayStatuses) {
     if (!parkingSpotMap[spotId]) {
       parkingSpotMap[spotId] = ownerId === null ? [...dates] : [];
     }
-    if (ownerId === null && reservationDate !== null) {
+    if (ownerId === null && reservationId !== null) {
       // Is reserved, -> remove from available days
-      parkingSpotMap[spotId] = parkingSpotMap[spotId].filter((date) => date !== reservationDate);
+      parkingSpotMap[spotId] = parkingSpotMap[spotId].filter((date) => date !== statusDate);
     }
-    if (ownerId !== null && reservationDate === null && releaseDate !== null) {
+    if (ownerId !== null && reservationId === null && releaseId !== null) {
       // Owned by user, but released for the day
-      parkingSpotMap[spotId].push(releaseDate);
+      parkingSpotMap[spotId].push(statusDate!);
     }
   }
   return Object.entries(parkingSpotMap).map(([spotId, availabilityDates]) => ({spotId, availabilityDates}));

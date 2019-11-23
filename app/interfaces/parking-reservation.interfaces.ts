@@ -74,13 +74,18 @@ export interface MyReservationsResponse {
 export interface ParkingSpotDayStatus {
   ownerId: string | null;
   spotId: string;
-  reservationDate: string | null;
-  releaseDate: string | null;
+  reservationId?: string | null;
+  releaseId?: string | null;
+  reserverId?: string | null;
+  date: string | null;
 }
 
 export interface QueriedParkingSpotDayStatus {
   ownerid: string | null;
   spotid: string;
+  reservationid?: string | null;
+  releaseid?: string | null;
+  reserverid?: string | null;
   reservationdate: Date | null;
   releasedate: Date | null;
 }
