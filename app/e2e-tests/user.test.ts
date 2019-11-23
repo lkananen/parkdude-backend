@@ -26,7 +26,7 @@ describe('Users/authentication (e2e)', () => {
 
     test('Should not be able to reserve spot', async () => {
       await agent
-        .get('/api/reserve-test')
+        .post('/api/parking-reservations')
         .expect(401, {'message': 'Verified account required.'});
     });
 
@@ -55,7 +55,7 @@ describe('Users/authentication (e2e)', () => {
 
     test('Should not be able to reserve spot', async () => {
       await agent
-        .get('/api/reserve-test')
+        .post('/api/parking-reservations')
         .expect(403, {message: 'Verified account required.'});
     });
 
@@ -83,10 +83,10 @@ describe('Users/authentication (e2e)', () => {
         .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name});
     });
 
-    test('Should be able to reserve spot', async () => {
+    test('Should be able to get parking spots', async () => {
       await agent
-        .get('/api/reserve-test')
-        .expect(201);
+        .get('/api/parking-spots')
+        .expect(200);
     });
 
     test('Should fail to add new parking spots', async () => {
@@ -106,11 +106,12 @@ describe('Users/authentication (e2e)', () => {
       await User.delete({});
     });
 
-    test('Should be able to reserve spot', async () => {
+    test('Should be able to get parking spots', async () => {
       await agent
-        .get('/api/reserve-test')
-        .expect(201);
+        .get('/api/parking-spots')
+        .expect(200);
     });
+
     test('Should manage to add new parking spots', async () => {
       await agent
         .post('/api/parking-spots')
