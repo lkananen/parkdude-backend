@@ -10,7 +10,7 @@ import {passport} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {getUsers, getUser, putUpdatedUser, deleteUser} from './controllers/user.controller';
 import {
-  getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations
+  getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations, deleteReservations
 } from './controllers/parking-reservation.controller';
 
 export function createRouter(): Router {
@@ -33,22 +33,12 @@ export function createRouter(): Router {
   router.put('/users/:userId', adminRoleRequired, asyncWrapper(putUpdatedUser));
   router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteUser));
 
-
-  router.get('/reserve-test', loginRequired, (req, res) => (res.sendStatus(201)));
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
   router.get('/parking-reservations/parking-spot/:parkingSpotId/calendar', asyncWrapper(getReservationsCalendar));
+  router.delete('/parking-reservations/parking-spot/:parkingSpotId', asyncWrapper(deleteReservations));
   router.get('/parking-reservations/my-reservations', asyncWrapper(getMyReservations));
   router.get('/parking-reservations/days/:date', asyncWrapper(getReservationsForDate));
-
-  // test route -- to be removed
-  router.get('/test', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.send(req.user);
-    } else {
-      res.send('You need to login first');
-    }
-  });
 
   return router;
 }

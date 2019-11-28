@@ -7,6 +7,7 @@ import {createRouter} from './router';
 import {StatusError} from './utils/errors';
 import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection, getConnectionManager, getConnection} from 'typeorm';
+import {EntityNotFoundError} from 'typeorm/error/EntityNotFoundError';
 import {ValidationError} from 'class-validator';
 import {Session} from './entities/session';
 import {TypeormStore} from 'connect-typeorm';
@@ -72,6 +73,12 @@ export async function createApp(): Promise<Express> {
       res.status(error.statusCode).json({message: error.message});
       return;
     }
+
+    if (error instanceof EntityNotFoundError) {
+      res.status(404).json({message: 'Entity not found.'});
+      return;
+    }
+
     if (Array.isArray(error) && error[0] instanceof ValidationError) {
       // Error comes from class-validator
       const errorMessages = flatten(

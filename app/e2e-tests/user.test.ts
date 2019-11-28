@@ -26,7 +26,7 @@ describe('Users/authentication (e2e)', () => {
 
     test('Should not be able to reserve spot', async () => {
       await agent
-        .get('/api/reserve-test')
+        .post('/api/parking-reservations')
         .expect(401, {'message': 'Verified account required.'});
     });
 
@@ -55,7 +55,7 @@ describe('Users/authentication (e2e)', () => {
 
     test('Should not be able to reserve spot', async () => {
       await agent
-        .get('/api/reserve-test')
+        .post('/api/parking-reservations')
         .expect(403, {message: 'Verified account required.'});
     });
 
@@ -83,10 +83,10 @@ describe('Users/authentication (e2e)', () => {
         .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name});
     });
 
-    test('Should be able to reserve spot', async () => {
+    test('Should be able to get parking spots', async () => {
       await agent
-        .get('/api/reserve-test')
-        .expect(201);
+        .get('/api/parking-spots')
+        .expect(200);
     });
 
     test('Should fail to add new parking spots', async () => {
@@ -106,11 +106,12 @@ describe('Users/authentication (e2e)', () => {
       await User.delete({});
     });
 
-    test('Should be able to reserve spot', async () => {
+    test('Should be able to get parking spots', async () => {
       await agent
-        .get('/api/reserve-test')
-        .expect(201);
+        .get('/api/parking-spots')
+        .expect(200);
     });
+
     test('Should manage to add new parking spots', async () => {
       await agent
         .post('/api/parking-spots')
@@ -179,47 +180,6 @@ describe('Users/authentication (e2e)', () => {
       await agent
         .get('/api/auth/login-state')
         .expect({isAuthenticated: false});
-    });
-  });
-
-  describe('Service tests', () => {
-    let user1: User;
-    let user2: User;
-
-    beforeAll(async () => {
-      user1 = await User.create({
-        name: 'user1',
-        email: 'test@example.com',
-        role: UserRole.UNVERIFIED
-      }).save();
-
-      user2 = await User.create({
-        name: 'user2',
-        email: 'test2@example.com',
-        role: UserRole.UNVERIFIED
-      }).save();
-
-      agent = request.agent(await createApp());
-    });
-
-    afterAll(async () => {
-      await User.delete({});
-    });
-
-    test('getUser should get user by email', async () => {
-      expect(await getUser({email: user1.email})).toEqual(user1);
-    });
-    test('fetchUsers should get all users', async () => {
-      expect(await fetchUsers()).toEqual([user1, user2]);
-    });
-    test('getOrCreateUser creates a new user if no match', async () => {
-      const name = 'newuser';
-      const email = 'new@gmail.com';
-      const newuser = await getOrCreateUser({email, name});
-      expect(newuser).toHaveProperty('name', name);
-      expect(newuser).toHaveProperty('email', email);
-      expect(newuser).toHaveProperty('id');
-      expect(await fetchUsers()).toHaveLength(3);
     });
   });
 });
