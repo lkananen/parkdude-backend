@@ -26,6 +26,7 @@ export class ParkingSpot extends BaseEntity {
 
   @ManyToOne(() => User, (user) => user.ownedParkingSpots, {
     nullable: true,
+    eager: true,
     onDelete: 'SET NULL'
   })
   owner?: User;
@@ -47,9 +48,9 @@ export class ParkingSpot extends BaseEntity {
     return {
       id,
       name,
-      owner: owner && owner.toUserData(),
-      created,
-      updated
+      owner: owner ? owner.toUserData() : null,
+      created: created.toISOString(),
+      updated: updated.toISOString()
     };
   }
 

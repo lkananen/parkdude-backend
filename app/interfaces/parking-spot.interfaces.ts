@@ -1,4 +1,5 @@
 import {UserData} from './user.interfaces';
+import {DateTimeString} from './general.interfaces';
 export interface ParkingSpotBody {
   name: string;
   ownerEmail?: string;
@@ -7,9 +8,9 @@ export interface ParkingSpotBody {
 export interface ParkingSpotData {
   id: string;
   name: string;
-  owner?: UserData;
-  created: Date;
-  updated: Date;
+  owner: UserData | null;
+  created: DateTimeString;
+  updated: DateTimeString;
 }
 
 export interface BasicParkingSpotData {

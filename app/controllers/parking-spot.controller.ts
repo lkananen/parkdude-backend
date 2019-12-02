@@ -9,9 +9,21 @@ import {
 } from '../interfaces/parking-spot.interfaces';
 import {GenericResponse} from '../interfaces/general.interfaces';
 import {GetParkingspotResponse} from '../interfaces/parking-spot.interfaces';
+import {BadRequestError} from '../utils/errors';
+import {isValidDateString} from '../utils/date';
 
 export async function getParkingSpots(req: Request, res: Response) {
-  const parkingSpots = await fetchParkingSpots();
+  const availableOnDates: string[] = req.query.availableOnDates && req.query.availableOnDates.split(',');
+
+  if (availableOnDates) {
+    if (availableOnDates.some((date) => !isValidDateString(date))) {
+      throw new BadRequestError('Dates must be in format YYYY-MM-DD.');
+    }
+  }
+
+  const parkingSpots = await fetchParkingSpots(availableOnDates);
+  // Sort to alphabetical order
+  parkingSpots.sort((spot1, spot2) => spot1.name < spot2.name ? -1 : 1);
   const json: GetParkingspotsResponse = {
     data: parkingSpots.map((spot) => spot.toParkingSpotData())
   };
