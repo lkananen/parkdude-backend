@@ -1,16 +1,19 @@
 import {User, UserRole} from '../entities/user';
-import {UserBody} from '../interfaces/user.interfaces';
+import {UserBody, UserUpdateBody, UserData} from '../interfaces/user.interfaces';
 
-export async function fetchUsers(): Promise<User[]> {
-  return await User.find();
+export async function fetchUsers(userRole?: UserRole): Promise<User[]> {
+  if (!userRole) {
+    return await User.find();
+  }
+  return await User.find({where: {role: userRole}});
 }
 
 export async function getUser({email}: UserBody): Promise <User | undefined> {
   return await User.findOne({email});
 }
 
-export async function fetchUser(id: string): Promise<User | undefined> {
-  return await User.findOne(id);
+export async function fetchUser(id: string): Promise<User> {
+  return await User.findOneOrFail(id);
 }
 
 export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
@@ -23,4 +26,15 @@ export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
     }).save();
   }
   return user;
+}
+
+export async function updateUser(user: User, data: UserUpdateBody): Promise<User> {
+  user.email = data.email;
+  user.name = data.name;
+  user.role = data.role;
+  return await user.save();
+}
+
+export async function deleteUser(user: User) {
+  await user.remove();
 }
