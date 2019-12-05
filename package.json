@@ -23,13 +23,17 @@
     "typeorm:generate": "npm run typeorm migration:generate -- --dir app/migrations --config env/app.dev.env --name",
     "typeorm:show": "npm run typeorm migration:show -- --config env/app.dev.env",
     "typeorm:migrate": "npm run typeorm migration:run -- --config env/app.dev.env",
-    "typeorm:revert": "npm run typeorm migration:revert -- --config env/app.dev.env"
+    "typeorm:revert": "npm run typeorm migration:revert -- --config env/app.dev.env",
+    "aws-init": "cdk bootstrap",
+    "aws-build": "cdk synth ParkdudeBackendStack",
+    "aws-deploy": "cdk deploy ParkdudeBackendStack",
+    "aws-destroy": "cdk destroy ParkdudeBackendStack"
   },
   "devDependencies": {
     "@aws-cdk/assert": "^1.11.0",
     "@types/jest": "^24.0.18",
     "@types/supertest": "^2.0.8",
-    "aws-cdk": "^1.11.0",
+    "aws-cdk": "^1.16.3",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-jest": "^22.17.0",
     "eslint-plugin-node": "^10.0.0",
@@ -41,9 +45,13 @@
     "typescript": "~3.6.2"
   },
   "dependencies": {
-    "@aws-cdk/aws-apigateway": "^1.11.0",
-    "@aws-cdk/aws-lambda": "^1.11.0",
-    "@aws-cdk/core": "^1.11.0",
+    "@aws-cdk/aws-apigateway": "^1.16.3",
+    "@aws-cdk/aws-ec2": "^1.16.3",
+    "@aws-cdk/aws-iam": "^1.16.3",
+    "@aws-cdk/aws-kms": "^1.16.3",
+    "@aws-cdk/aws-lambda": "^1.16.3",
+    "@aws-cdk/aws-rds": "^1.16.3",
+    "@aws-cdk/core": "^1.16.3",
     "@types/aws-lambda": "^8.10.33",
     "@types/aws-serverless-express": "^3.3.1",
     "@types/cookie-parser": "^1.4.2",
