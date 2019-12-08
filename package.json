@@ -5,7 +5,7 @@
     "parkdude-backend": "build/bin/parkdude-backend.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "webpack",
     "postinstall": "ts-node bin/copy-node-modules.ts",
     "watch": "tsc -w",
     "dev": "nodemon --watch \"app/**/*.ts\" --ignore \"app/**/*.test.ts\" --ext ts,env --exec \"ts-node app/index.ts\"",
@@ -41,8 +41,12 @@
     "nodemon": "^1.19.3",
     "supertest": "^4.0.2",
     "ts-jest": "^24.0.2",
+    "ts-loader": "^6.2.1",
     "ts-node": "^8.1.0",
-    "typescript": "~3.6.2"
+    "typescript": "~3.7.2",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-filter-warnings-plugin": "^1.2.1"
   },
   "dependencies": {
     "@aws-cdk/aws-apigateway": "^1.16.3",

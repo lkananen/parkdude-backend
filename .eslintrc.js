@@ -23,6 +23,7 @@ module.exports = {
     'node/no-missing-import': 'off',
     'node/no-unsupported-features/es-syntax': 'off',
     'node/shebang': 'off',
+    'node/no-unpublished-require': 'off',
     'require-jsdoc': 'off',
     'valid-jsdoc': 'off',
     indent: ['error', 2]
