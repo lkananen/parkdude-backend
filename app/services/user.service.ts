@@ -16,10 +16,13 @@ export async function fetchUser(id: string): Promise<User | undefined> {
 export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
   let user = await User.findOne({email});
   if (user === undefined) {
+    if (!process.env.COMPANY_EMAIL) {
+      throw new Error('Company email has not been defined!');
+    }
     user = await User.create({
       name: name,
       email: email,
-      role: email.endsWith('@innogiant.com') ? UserRole.VERIFIED : UserRole.UNVERIFIED
+      role: email.endsWith(process.env.COMPANY_EMAIL) ? UserRole.VERIFIED : UserRole.UNVERIFIED
     }).save();
   }
   return user;
