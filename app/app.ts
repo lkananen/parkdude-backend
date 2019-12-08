@@ -11,10 +11,37 @@ import {EntityNotFoundError} from 'typeorm/error/EntityNotFoundError';
 import {ValidationError} from 'class-validator';
 import {Session} from './entities/session';
 import {TypeormStore} from 'connect-typeorm';
+import {DayRelease} from './entities/day-release';
+import {DayReservation} from './entities/day-reservation';
+import {ParkingSpot} from './entities/parking-spot';
+import {User} from './entities/user';
+import {ParkingSpot1570894017831} from './migrations/1570894017831-ParkingSpot';
+import {ParkingSpot1570897770911} from './migrations/1570897770911-ParkingSpot';
+import {Session1571167364513} from './migrations/1571167364513-Session';
+import {User1571321641906} from './migrations/1571321641906-User';
+import {User1571777191899} from './migrations/1571777191899-User';
+import {ReservationEntities1572691615415} from './migrations/1572691615415-ReservationEntities';
+import {RemoveDayReleaseUser1573387029106} from './migrations/1573387029106-RemoveDayReleaseUser';
+import {AddSpotId1573390075029} from './migrations/1573390075029-AddSpotId';
 
 export async function createApp(): Promise<Express> {
   if (getConnectionManager().connections.length === 0) {
-    await createConnection();
+    await createConnection({
+      type: 'postgres',
+      host: process.env.TYPEORM_HOST,
+      username: process.env.TYPEORM_USERNAME,
+      password: process.env.TYPEORM_PASSWORD,
+      database: process.env.TYPEORM_DATABASE,
+      port: process.env.TYPEORM_PORT ? +process.env.TYPEORM_PORT : 5432,
+      migrationsRun: process.env.TYPEORM_MIGRATIONS_RUN == 'true',
+      synchronize: process.env.TYPEORM_SYNCHRONIZE == 'true',
+      logging: process.env.TYPEORM_LOGGING == 'true',
+      entities: [DayRelease, DayReservation, ParkingSpot, Session, User],
+      migrations: [
+        ParkingSpot1570894017831, ParkingSpot1570897770911, Session1571167364513,
+        User1571321641906, User1571777191899, ReservationEntities1572691615415,
+        RemoveDayReleaseUser1573387029106, AddSpotId1573390075029]
+    });
   }
 
   const app = express();

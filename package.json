@@ -55,6 +55,7 @@
     "@aws-cdk/aws-kms": "^1.16.3",
     "@aws-cdk/aws-lambda": "^1.16.3",
     "@aws-cdk/aws-rds": "^1.16.3",
+    "@aws-cdk/aws-secretsmanager": "^1.16.3",
     "@aws-cdk/core": "^1.16.3",
     "@types/aws-lambda": "^8.10.33",
     "@types/aws-serverless-express": "^3.3.1",
