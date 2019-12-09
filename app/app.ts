@@ -2,6 +2,7 @@ import * as express from 'express';
 import * as cors from 'cors';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
+import * as morgan from 'morgan';
 import {passport} from './middlewares/passport';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';
@@ -32,6 +33,8 @@ export async function createApp(): Promise<Express> {
   }
 
   const app = express();
+
+  app.use(morgan('dev'));
 
   const repository = getConnection().getRepository(Session);
 
