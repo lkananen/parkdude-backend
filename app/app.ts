@@ -34,7 +34,9 @@ export async function createApp(): Promise<Express> {
 
   const app = express();
 
-  app.use(morgan('dev'));
+  if (process.env.NODE_ENV !== 'test') {
+    app.use(morgan('dev'));
+  }
 
   const repository = getConnection().getRepository(Session);
 
