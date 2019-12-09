@@ -33,7 +33,8 @@ export class ParkdudeBackendStack extends cdk.Stack {
 
     const parkdudeVPCSecGroup = new ec2.SecurityGroup(this, 'ParkdudeVPCSecGroup', {
       vpc: parkdudeVpc,
-      allowAllOutbound: false
+      // Temporarily allowing all traffic outside until more specific rules are created
+      allowAllOutbound: true // FIX ME!
     });
 
     parkdudeVPCSecGroup.addIngressRule(
@@ -48,6 +49,8 @@ export class ParkdudeBackendStack extends cdk.Stack {
       'PostgreSQL default outbound port'
     );
 
+    // Automatically creates a password for database.
+    // Password must consist of ASCII characters, not including [ /@"']
     const secret = new Secret(this, 'DatabasePassword', {generateSecretString: {excludeCharacters: '/@"\''}});
 
     // Note! RDS has deletion protection on by default. This means that deleting the
@@ -83,7 +86,6 @@ export class ParkdudeBackendStack extends cdk.Stack {
       timeout: Duration.seconds(10),
       vpc: parkdudeVpc,
       vpcSubnets: parkdudeVpc.selectSubnets({
-        // Defines the public accessability of the DB
         subnetType: SubnetType.PRIVATE
       }),
       securityGroup: parkdudeVPCSecGroup
@@ -91,7 +93,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
 
     const restApi = new apigateway.RestApi(this, 'rest-api', {
       restApiName: 'Parkdude REST API',
-      description: 'This service serves widgets.'
+      description: 'REST API for Parkdude application'
     });
 
     const restApiRoot = restApi.root.addResource('api');
