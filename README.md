@@ -98,7 +98,9 @@ Updating changes to excisting stack:
 
 Migrations need to be created for any changes made to database entities.
 
-Once you have done your code changes to an entity, run command `npm run typeorm:generate <migration name>`. Migration name should contain entity name. Migration file should appear in `app/migrations` directory. Migrations can be applied by running `npm run typeorm:migrate`. Latest migration can be reverted by running `npm run typeorm:revert`.
+Once you have done your code changes to an entity, run command `npm run typeorm:generate <migration name>`. Migration name should contain entity name. Migration file should appear in `app/migrations` directory. Remember to add the migration to `app/migrations/index.ts` file.
+
+Migrations can be applied by running `npm run typeorm:migrate`. Latest migration can be reverted by running `npm run typeorm:revert`. For AWS migrations can be run by enabling `TYPEORM_MIGRATIONS_RUN = true` in environment variables. AWS will then check for migration whenever lambda is run. Setting should be set off in production.
 
 If migration requires changes can not be handled by automatically generated migration file, the migration file can be changed manually. One example of such situation would be when some existing database values need to be changed to match new database schema.
 
