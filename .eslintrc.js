@@ -14,6 +14,7 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': 'off',
     '@typescript-eslint/no-use-before-define': ["error", { "functions": false }],
     '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-empty-function': 'off',
     'comma-dangle': 'off',
     'max-len': ['error', { code: 120 }],
     'new-cap': 'off',
