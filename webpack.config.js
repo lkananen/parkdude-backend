@@ -5,7 +5,7 @@ const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
 const webpack = require('webpack');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   entry: './handlers/rest-api.ts',
   output: {
     filename: 'rest-api.js',
