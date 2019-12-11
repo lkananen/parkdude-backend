@@ -22,6 +22,7 @@ describe('Parking spots (e2e)', () => {
       email: 'admin@example.com',
       role: UserRole.ADMIN
     }).save();
+    await ParkingSpot.delete({});
   });
 
   beforeEach(async () => {
