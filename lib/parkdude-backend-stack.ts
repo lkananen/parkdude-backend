@@ -12,7 +12,7 @@ import { SubnetType } from '@aws-cdk/aws-ec2';
 
 export class ParkdudeBackendStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);    
+    super(scope, id, props);
 
     const restApiHandler = new lambda.Function(this, 'RestApiHandler', {
       runtime: lambda.Runtime.NODEJS_10_X,
@@ -32,6 +32,23 @@ export class ParkdudeBackendStack extends cdk.Stack {
       defaultIntegration: new LambdaIntegration(restApiHandler),
       anyMethod: true
     });
+    
+    // TODO
+    /*
+    VPC: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ec2-readme.html
+    VPC config: https://www.pulumi.com/docs/guides/crosswalk/aws/vpc/
+    Fargate: https://aws.amazon.com/blogs/aws/aws-cloud-development-kit-cdk-typescript-and-python-are-now-generally-available/
+    RDS: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-rds-readme.html
+    Aurora: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-rds-readme.html
+    https://www.npmjs.com/package/@aws-cdk/aws-rds
+    https://madabout.cloud/2019/09/01/aws-data-api-for-amazon-aurora-serverless/
+    Dynamo-db: https://cdkworkshop.com/20-typescript/40-hit-counter/300-resources.html
+    */
+
+    
+    // https://blog.codecentric.de/en/2019/09/aws-cdk-create-custom-vpc/
+    // https://blog.codecentric.de/en/2019/11/aws-cdk-part-3-how-to-create-an-rds-instance/
+
 
     const parkdudeVpc = new ec2.Vpc(this, 'ParkdudeVPC', {
       cidr: "10.0.0.0/24",       // Total of 2^(32-N) ip addresses in range. E.g. 2^6 = 256.
