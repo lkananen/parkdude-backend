@@ -2,6 +2,7 @@ import * as express from 'express';
 import * as cors from 'cors';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
+import * as morgan from 'morgan';
 import {passport} from './middlewares/passport';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';
@@ -9,15 +10,33 @@ import {Request, Response, NextFunction, Express} from 'express';
 import {createConnection, getConnectionManager, getConnection} from 'typeorm';
 import {EntityNotFoundError} from 'typeorm/error/EntityNotFoundError';
 import {ValidationError} from 'class-validator';
-import {Session} from './entities/session';
 import {TypeormStore} from 'connect-typeorm';
+import {Session} from './entities/session';
+import {entities} from './entities';
+import {migrations} from './migrations/index';
 
 export async function createApp(): Promise<Express> {
   if (getConnectionManager().connections.length === 0) {
-    await createConnection();
+    await createConnection({
+      type: 'postgres',
+      host: process.env.TYPEORM_HOST,
+      username: process.env.TYPEORM_USERNAME,
+      password: process.env.TYPEORM_PASSWORD,
+      database: process.env.TYPEORM_DATABASE,
+      port: process.env.TYPEORM_PORT ? +process.env.TYPEORM_PORT : 5432,
+      migrationsRun: process.env.TYPEORM_MIGRATIONS_RUN == 'true',
+      synchronize: process.env.TYPEORM_SYNCHRONIZE == 'true',
+      logging: process.env.TYPEORM_LOGGING == 'true',
+      entities,
+      migrations
+    });
   }
 
   const app = express();
+
+  if (process.env.NODE_ENV !== 'test') {
+    app.use(morgan('dev'));
+  }
 
   const repository = getConnection().getRepository(Session);
 

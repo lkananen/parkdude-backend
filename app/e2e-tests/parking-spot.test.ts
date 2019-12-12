@@ -22,6 +22,7 @@ describe('Parking spots (e2e)', () => {
       email: 'admin@example.com',
       role: UserRole.ADMIN
     }).save();
+    await ParkingSpot.delete({});
   });
 
   beforeEach(async () => {
@@ -228,8 +229,10 @@ describe('Parking spots (e2e)', () => {
       });
 
       test('Should give 400 if date is invalid', async () => {
+        disableErrorLogs();
         await agent.get('/api/parking-spots?availableOnDates=abc,efg')
           .expect(400, {message: 'Dates must be in format YYYY-MM-DD.'});
+        enableErrorLogs();
       });
     });
   });

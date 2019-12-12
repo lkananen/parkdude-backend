@@ -57,12 +57,18 @@ function createAuthRouter(): Router {
 
   router.get(
     '/google/web',
-    passport.authenticate('google-web', {scope: ['profile', 'email']})
+    passport.authenticate('google-web', {
+      scope: ['profile', 'email'],
+      prompt: 'select_account'
+    })
   );
 
   router.get(
     '/google/mobile',
-    passport.authenticate('google-mobile', {scope: ['profile', 'email']})
+    passport.authenticate('google-mobile', {
+      scope: ['profile', 'email'],
+      prompt: 'select_account'
+    })
   );
 
   router.get(

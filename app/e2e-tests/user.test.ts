@@ -41,7 +41,7 @@ describe('Users/authentication (e2e)', () => {
 
   describe('Unverified user', () => {
     const name = 'Tester';
-    const email = 'tester@gmail.com';
+    const email = 'tester@unverified.com';
 
     beforeEach(async () => {
       agent = request.agent(await createApp());
@@ -70,7 +70,7 @@ describe('Users/authentication (e2e)', () => {
 
   describe('Verified user', () => {
     const name = 'Tester';
-    const email = 'tester@innogiant.com';
+    const email = 'tester' + process.env.COMPANY_EMAIL;
 
     beforeEach(async () => {
       agent = request.agent(await createApp());
