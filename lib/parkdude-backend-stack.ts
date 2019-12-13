@@ -14,26 +14,6 @@ export class ParkdudeBackendStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const restApiHandler = new lambda.Function(this, 'RestApiHandler', {
-      runtime: lambda.Runtime.NODEJS_10_X,
-      code: lambda.Code.asset('./build'),
-      handler: 'handlers/rest-api.handler',
-      environment: this.getLambdaEnvironmentVariables(),
-      timeout: Duration.seconds(10),
-      vpc: parkdudeVpc
-    });
-
-    const restApi = new apigateway.RestApi(this, 'rest-api', {
-      restApiName: 'Parkdude REST API',
-      description: 'This service serves widgets.'
-    });
-
-    const restApiRoot = restApi.root.addResource('api');
-    restApiRoot.addProxy({
-      defaultIntegration: new LambdaIntegration(restApiHandler),
-      anyMethod: true
-    });
-
     const parkdudeVpc = new ec2.Vpc(this, 'ParkdudeVPC', {
       cidr: "10.0.0.0/24",       // Total of 2^(32-N) ip addresses in range. E.g. 2^6 = 256.
       maxAzs: 2,                 // RDS instance requires at least 2
@@ -91,6 +71,26 @@ export class ParkdudeBackendStack extends cdk.Stack {
       ec2.Port.tcp(80),
       'HTTP default outbound port for Lambda'
     );
+
+    const restApiHandler = new lambda.Function(this, 'RestApiHandler', {
+      runtime: lambda.Runtime.NODEJS_10_X,
+      code: lambda.Code.asset('./build'),
+      handler: 'handlers/rest-api.handler',
+      environment: this.getLambdaEnvironmentVariables(),
+      timeout: Duration.seconds(10),
+      vpc: parkdudeVpc
+    });
+
+    const restApi = new apigateway.RestApi(this, 'rest-api', {
+      restApiName: 'Parkdude REST API',
+      description: 'This service serves widgets.'
+    });
+
+    const restApiRoot = restApi.root.addResource('api');
+    restApiRoot.addProxy({
+      defaultIntegration: new LambdaIntegration(restApiHandler),
+      anyMethod: true
+    });
 
     // Note! RDS has deletion protection on by default. This means that deleting the
     // related CloudFormation stack doesn't delete the RDS, but instead makes it orphan.
