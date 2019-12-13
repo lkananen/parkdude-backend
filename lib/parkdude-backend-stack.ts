@@ -78,10 +78,34 @@ export class ParkdudeBackendStack extends cdk.Stack {
       'PostgreSQL default inbound port'
     );
 
+    parkdudeVPCSecGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'HTTPS default inbound port for Lambda'
+    );
+
+    parkdudeVPCSecGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(80),
+      'HTTP default inbound port for Lambda'
+    );
+
     parkdudeVPCSecGroup.addEgressRule(
       ec2.Peer.ipv4("10.0.0.0/24"),         // CIDR block for local VPC traffic
       ec2.Port.tcp(5432),
       'PostgreSQL default outbound port'
+    );
+
+    parkdudeVPCSecGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'HTTPS default outbound port for Lambda'
+    );
+
+    parkdudeVPCSecGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(80),
+      'HTTP default outbound port for Lambda'
     );
 
     // Note! RDS has deletion protection on by default. This means that deleting the
