@@ -27,6 +27,26 @@ export async function createAppWithAdminSession() {
   return agent;
 }
 
+export async function createAppWithNormalSession() {
+  const app = await createApp();
+  const agent = request.agent(app);
+
+  // Clear existing users
+  await User.delete({});
+
+  // Add user to database
+  const user = User.create({
+    name: 'Tester',
+    email: TEST_USER_EMAIL,
+    role: UserRole.VERIFIED
+  });
+  await user.save();
+
+  await loginWithEmail(agent, user.email);
+
+  return agent;
+}
+
 /**
  * Creates login session for the user. Session cookies are added to agent.
  */

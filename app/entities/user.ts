@@ -17,13 +17,16 @@ export class User extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
+    @Column({
+      unique: true
+    })
     email: string;
 
     @Column({
-      nullable: true
+      nullable: true,
+      select: false
     })
-    password: string;
+    password?: string;
 
     @Column()
     name: string;
@@ -45,6 +48,10 @@ export class User extends BaseEntity {
 
     @UpdateDateColumn()
     updated: Date;
+
+    get isAdmin() {
+      return this.role === UserRole.ADMIN;
+    }
 
     toUserData(): UserData {
       return {

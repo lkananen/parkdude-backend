@@ -1,18 +1,37 @@
+/* eslint-disable require-atomic-updates */
 import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
 import {ParkingSpotData} from '../interfaces/parking-spot.interfaces';
 import {closeConnection} from '../test-utils/teardown';
-import {createAppWithAdminSession} from '../test-utils/test-login';
+import {createAppWithNormalSession, TEST_USER_EMAIL, loginWithEmail} from '../test-utils/test-login';
 import {disableErrorLogs, enableErrorLogs} from '../test-utils/logger';
+import {DayReservation} from '../entities/day-reservation';
+import {User, UserRole} from '../entities/user';
+import {DayRelease} from '../entities/day-release';
 
 describe('Parking spots (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
+  let user: User;
+  let adminUser: User;
+
+  beforeAll(async () => {
+    agent = await createAppWithNormalSession();
+    user = await User.findOneOrFail({email: TEST_USER_EMAIL});
+    adminUser = await User.create({
+      name: 'Admin Tester',
+      email: 'admin@example.com',
+      role: UserRole.ADMIN
+    }).save();
+    await ParkingSpot.delete({});
+  });
 
   beforeEach(async () => {
-    agent = await createAppWithAdminSession();
+    await loginWithEmail(agent, user.email);
   });
 
   afterEach(async () => {
+    await DayReservation.delete({});
+    await DayRelease.delete({});
     await ParkingSpot.delete({});
   });
 
@@ -28,26 +47,202 @@ describe('Parking spots (e2e)', () => {
     });
 
     test('Should return parking-spots', async () => {
-      const parkingSpot1: ParkingSpotData = (await agent
-        .post('/api/parking-spots')
-        .send({name: 'Parking spot 1'}))
-        .body
-        .data;
-
-      const parkingSpot2: ParkingSpotData = (await agent
-        .post('/api/parking-spots')
-        .send({name: 'Parking spot 2'}))
-        .body
-        .data;
+      const parkingSpots = [
+        await ParkingSpot.create({name: 'Parking spot 1'}).save(),
+        await ParkingSpot.create({name: 'Parking spot 2'}).save(),
+      ];
 
       await agent
         .get('/api/parking-spots')
-        .expect(200, {data: [parkingSpot1, parkingSpot2]});
+        .expect(200, {data: parkingSpots.map((spot) => spot.toParkingSpotData())});
+    });
+
+    describe('Filtering by available on dates', () => {
+      let parkingSpots: ParkingSpot[] = [];
+
+      beforeEach(async () => {
+        parkingSpots = [
+          await ParkingSpot.create({name: 'Parking spot 1'}).save(),
+          await ParkingSpot.create({name: 'Parking spot 2'}).save(),
+          await ParkingSpot.create({name: 'Parking spot 3'}).save(),
+        ];
+      });
+
+      test('Should filter when spot has normal reservations', async () => {
+        await DayReservation.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01',
+          user
+        }).save();
+        await DayReservation.create({
+          spotId: parkingSpots[1].id,
+          date: '2019-11-01',
+          user: adminUser
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-01')
+          .expect(200, {data: [parkingSpots[2].toParkingSpotData()]});
+      });
+
+
+      test('Should filter by when spot has normal reservations on some of the days', async () => {
+        await DayReservation.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01',
+          user
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-01,2019-11-02')
+          .expect(200, {data: [
+            parkingSpots[1].toParkingSpotData(),
+            parkingSpots[2].toParkingSpotData()
+          ]});
+      });
+
+      test('Should not filter when spot has normal reservations on other days', async () => {
+        await DayReservation.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01',
+          user
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-02')
+          .expect(200, {data: [
+            parkingSpots[0].toParkingSpotData(),
+            parkingSpots[1].toParkingSpotData(),
+            parkingSpots[2].toParkingSpotData()
+          ]});
+      });
+
+      test('Should filter when spot has owners', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = adminUser;
+        parkingSpots[0] = await parkingSpots[0].save();
+        parkingSpots[1] = await parkingSpots[1].save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-01')
+          .expect(200, {data: [parkingSpots[2].toParkingSpotData()]});
+      });
+
+      test('Should not filter when spot has owners, but the spot is released for the day', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = adminUser;
+        parkingSpots[0] = await parkingSpots[0].save();
+        parkingSpots[1] = await parkingSpots[1].save();
+
+        await DayRelease.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spotId: parkingSpots[1].id,
+          date: '2019-11-01'
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-01')
+          .expect(200, {data: [
+            parkingSpots[0].toParkingSpotData(),
+            parkingSpots[1].toParkingSpotData(),
+            parkingSpots[2].toParkingSpotData()
+          ]});
+      });
+
+      test('Should filter when spot has owners and is released for another day', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = adminUser;
+        parkingSpots[0] = await parkingSpots[0].save();
+        parkingSpots[1] = await parkingSpots[1].save();
+
+        await DayRelease.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spotId: parkingSpots[1].id,
+          date: '2019-11-01'
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-02')
+          .expect(200, {data: [
+            parkingSpots[2].toParkingSpotData()
+          ]});
+      });
+
+      test('Should filter when spot has owners and is released for one of the days, but not all of them', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = adminUser;
+        parkingSpots[0] = await parkingSpots[0].save();
+        parkingSpots[1] = await parkingSpots[1].save();
+
+        await DayRelease.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spotId: parkingSpots[1].id,
+          date: '2019-11-01'
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-01,2019-11-02')
+          .expect(200, {data: [
+            parkingSpots[2].toParkingSpotData()
+          ]});
+      });
+
+      test('Should filter when owned spot is released and then reserved', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = adminUser;
+        parkingSpots[0] = await parkingSpots[0].save();
+        parkingSpots[1] = await parkingSpots[1].save();
+
+        await DayRelease.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spotId: parkingSpots[1].id,
+          date: '2019-11-01'
+        }).save();
+
+        await DayReservation.create({
+          spotId: parkingSpots[0].id,
+          date: '2019-11-01',
+          user: adminUser
+        }).save();
+
+        await DayReservation.create({
+          spotId: parkingSpots[1].id,
+          date: '2019-11-01',
+          user
+        }).save();
+
+        await agent
+          .get('/api/parking-spots?availableOnDates=2019-11-01,2019-11-02')
+          .expect(200, {data: [parkingSpots[2].toParkingSpotData()]});
+      });
+
+      test('Should give 400 if date is invalid', async () => {
+        disableErrorLogs();
+        await agent.get('/api/parking-spots?availableOnDates=abc,efg')
+          .expect(400, {message: 'Dates must be in format YYYY-MM-DD.'});
+        enableErrorLogs();
+      });
     });
   });
 
 
   describe('POST /api/parking-spots', () => {
+    beforeEach(async () => {
+      await loginWithEmail(agent, adminUser.email);
+    });
+
     test('Should add parking spot', async () => {
       const name = 'Parking spot 1';
       await agent

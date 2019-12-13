@@ -8,7 +8,8 @@ import ec2 = require('@aws-cdk/aws-ec2');
 import rds = require('@aws-cdk/aws-rds');
 import {LambdaIntegration} from '@aws-cdk/aws-apigateway';
 import {Duration} from '@aws-cdk/core';
-import { SubnetType } from '@aws-cdk/aws-ec2';
+import {SubnetType} from '@aws-cdk/aws-ec2';
+import {Secret} from '@aws-cdk/aws-secretsmanager';
 
 export class ParkdudeBackendStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -17,7 +18,6 @@ export class ParkdudeBackendStack extends cdk.Stack {
     const parkdudeVpc = new ec2.Vpc(this, 'ParkdudeVPC', {
       cidr: "10.0.0.0/22",       // Total of 2^(32-N) ip addresses in range. E.g. 2^8 = 1024.
       maxAzs: 2,                 // RDS instance requires at least 2
-
       subnetConfiguration: [
         {
           subnetType: ec2.SubnetType.PUBLIC,
@@ -71,23 +71,51 @@ export class ParkdudeBackendStack extends cdk.Stack {
       ec2.Port.tcp(80),
       'HTTP default outbound port for Lambda'
     );
+    // Automatically creates a password for database.
+    // Password must consist of ASCII characters, not including [ /@"']
+    const secret = new Secret(this, 'DatabasePassword', {generateSecretString: {excludeCharacters: '/@"\''}});
+
+    // Note! RDS has deletion protection on by default. This means that deleting the
+    // related CloudFormation stack doesn't delete the RDS, but instead makes it orphan.
+    // This is on to protect user data. Deletions should be made manually.
+    const database = new rds.DatabaseInstance(this, 'ParkdudeDBInstance', {
+      engine: rds.DatabaseInstanceEngine.POSTGRES,
+      instanceClass: ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO),
+      masterUsername: 'syscdk',
+      masterUserPassword: secret.secretValue,
+      vpc: parkdudeVpc,
+      vpcPlacement: parkdudeVpc.selectSubnets({
+        // Defines the public accessability of the DB
+        subnetType: SubnetType.PRIVATE
+      }),
+      securityGroups: [parkdudeVPCSecGroup],
+      databaseName: 'ParkdudePSQL'
+    });
+
+    const databaseEnv = {
+      TYPEORM_HOST: database.dbInstanceEndpointAddress,
+      TYPEORM_USERNAME: 'syscdk',
+      TYPEORM_PASSWORD: secret.secretValue.toString(),
+      TYPEORM_DATABASE: 'ParkdudePSQL',
+      TYPEORM_PORT: '5432'
+    };
 
     const restApiHandler = new lambda.Function(this, 'RestApiHandler', {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: lambda.Code.asset('./build'),
       handler: 'handlers/rest-api.handler',
-      environment: this.getLambdaEnvironmentVariables(),
+      environment: {...this.getLambdaEnvironmentVariables(), ...databaseEnv},
       timeout: Duration.seconds(10),
       vpc: parkdudeVpc,
-      securityGroup: parkdudeVPCSecGroup,
       vpcSubnets: parkdudeVpc.selectSubnets({
         subnetType: SubnetType.PRIVATE
-      })
+      }),
+      securityGroup: parkdudeVPCSecGroup
     });
 
     const restApi = new apigateway.RestApi(this, 'rest-api', {
       restApiName: 'Parkdude REST API',
-      description: 'This service serves widgets.'
+      description: 'REST API for Parkdude application'
     });
 
     const restApiRoot = restApi.root.addResource('api');
@@ -95,23 +123,6 @@ export class ParkdudeBackendStack extends cdk.Stack {
       defaultIntegration: new LambdaIntegration(restApiHandler),
       anyMethod: true
     });
-
-    // Note! RDS has deletion protection on by default. This means that deleting the
-    // related CloudFormation stack doesn't delete the RDS, but instead makes it orphan.
-    // This is on to protect user data. Deletions should be made manually.
-    const instance = new rds.DatabaseInstance(this, 'ParkdudeDBInstance', {
-      engine: rds.DatabaseInstanceEngine.POSTGRES,
-      instanceClass: ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE2, ec2.InstanceSize.MICRO),
-      masterUsername: 'syscdk',         // By default the generated password is stored to secrets manager
-      vpc: parkdudeVpc,
-      vpcPlacement: parkdudeVpc.selectSubnets({
-        // Defines the public accessability of the DB
-        subnetType: SubnetType.PRIVATE
-      }),
-      securityGroups: [parkdudeVPCSecGroup],
-      databaseName: "ParkdudePSQL"
-    });
-
   }
 
   private getLambdaEnvironmentVariables(): dotenv.DotenvParseOutput {

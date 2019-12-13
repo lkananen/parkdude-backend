@@ -1,14 +1,18 @@
 import {Request, Response} from 'express';
 import {
   GetReservationsCalendarResponse, PostReservationsBody,
-  PostReservationsResponse, GetReservationsForDateResponse, MyReservationsResponse
+  PostReservationsResponse, GetReservationsForDateResponse, MyReservationsResponse,
+  DeleteReservationsResponse
 } from '../interfaces/parking-reservation.interfaces';
-import {fetchCalendar, fetchReservations, fetchReleases, reserveSpots} from '../services/parking-reservation.service';
+import {
+  fetchCalendar, fetchReservations, fetchReleases, reserveSpots, releaseSpots
+} from '../services/parking-reservation.service';
 import {User, UserRole} from '../entities/user';
 import {BasicParkingSpotData} from '../interfaces/parking-spot.interfaces';
 import {validateDateRange, toDateString, isValidDateString} from '../utils/date';
-import {BadRequestError, ForbiddenError, ReservationFailedError} from '../utils/errors';
+import {BadRequestError, ForbiddenError, ReservationFailedError, ReleaseFailedError} from '../utils/errors';
 import {fetchUser} from '../services/user.service';
+import {DeleteReservationsFailureResponse} from '../interfaces/parking-reservation.interfaces';
 
 // Some limitation to the size of the requests
 const MAX_DATE_RANGE = 500;
@@ -72,7 +76,7 @@ export async function getReservationsForDate(req: Request, res: Response) {
 export async function postReservations(req: Request, res: Response) {
   const {dates, userId, parkingSpotId}: PostReservationsBody = req.body;
   const user = req.user as User;
-  if (userId !== user.id && user.role !== UserRole.ADMIN) {
+  if (userId && userId !== user.id && user.role !== UserRole.ADMIN) {
     throw new ForbiddenError('Permission denied.');
   }
 
@@ -80,7 +84,7 @@ export async function postReservations(req: Request, res: Response) {
     throw new BadRequestError('dates is required.');
   }
 
-  if (dates.some((date) => !isValidDateString(date) || date.length !== 10)) {
+  if (dates.some((date) => !isValidDateString(date))) {
     throw new BadRequestError('Dates must be in format YYYY-MM-DD.');
   }
 
@@ -104,6 +108,37 @@ export async function postReservations(req: Request, res: Response) {
       });
     } else {
       throw err;
+    }
+  }
+}
+
+export async function deleteReservations(req: Request, res: Response) {
+  if (!req.query.dates) {
+    throw new BadRequestError('dates is required.');
+  }
+
+  const {parkingSpotId} = req.params;
+  const dates: string[] = req.query.dates.split(',');
+
+  if (dates.some((date) => !isValidDateString(date))) {
+    throw new BadRequestError('Dates must be in format YYYY-MM-DD.');
+  }
+
+  try {
+    await releaseSpots(dates, req.user as User, parkingSpotId);
+    const json: DeleteReservationsResponse = {
+      message: 'Parking reservations successfully released.'
+    };
+    res.status(200).json(json);
+  } catch (error) {
+    if (error instanceof ReleaseFailedError) {
+      const json: DeleteReservationsFailureResponse = {
+        message: error.message,
+        errorDates: error.dates
+      };
+      res.status(400).json(json);
+    } else {
+      throw error;
     }
   }
 }

@@ -33,7 +33,7 @@ function isValidDate(date: Date) {
 }
 
 export function isValidDateString(date: string) {
-  return isValidDate(new Date(date));
+  return date.length === 10 && isValidDate(new Date(date));
 }
 
 export function validateDateRange(startDate: string, endDate: string, maxRange: number) {
