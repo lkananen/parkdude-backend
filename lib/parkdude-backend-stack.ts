@@ -15,7 +15,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
     super(scope, id, props);
 
     const parkdudeVpc = new ec2.Vpc(this, 'ParkdudeVPC', {
-      cidr: "10.0.0.0/24",       // Total of 2^(32-N) ip addresses in range. E.g. 2^6 = 256.
+      cidr: "10.0.0.0/22",       // Total of 2^(32-N) ip addresses in range. E.g. 2^8 = 1024.
       maxAzs: 2,                 // RDS instance requires at least 2
 
       subnetConfiguration: [
@@ -55,7 +55,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
     );
 
     parkdudeVPCSecGroup.addEgressRule(
-      ec2.Peer.ipv4("10.0.0.0/24"),         // CIDR block for local VPC traffic
+      ec2.Peer.ipv4("10.0.0.0/22"),         // CIDR block for local VPC traffic
       ec2.Port.tcp(5432),
       'PostgreSQL default outbound port'
     );
