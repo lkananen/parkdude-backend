@@ -78,7 +78,11 @@ export class ParkdudeBackendStack extends cdk.Stack {
       handler: 'handlers/rest-api.handler',
       environment: this.getLambdaEnvironmentVariables(),
       timeout: Duration.seconds(10),
-      vpc: parkdudeVpc
+      vpc: parkdudeVpc,
+      securityGroup: parkdudeVPCSecGroup,
+      vpcSubnets: parkdudeVpc.selectSubnets({
+        subnetType: SubnetType.PRIVATE
+      })
     });
 
     const restApi = new apigateway.RestApi(this, 'rest-api', {
