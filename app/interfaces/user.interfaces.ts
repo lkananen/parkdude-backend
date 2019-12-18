@@ -13,10 +13,6 @@ export interface UserData {
 }
 
 export interface UserSessionData extends UserData {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
   sessions: string[];
 }
 
