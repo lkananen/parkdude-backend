@@ -1,5 +1,5 @@
 import {User, UserRole} from '../entities/user';
-import {UserBody, UserUpdateBody, UserSessions} from '../interfaces/user.interfaces';
+import {UserBody, UserUpdateBody, UserSessions, SessionUser} from '../interfaces/user.interfaces';
 import {Session} from '../entities/session';
 import {getConnection} from 'typeorm';
 
@@ -43,9 +43,10 @@ export async function deleteUser(user: User) {
 
 export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
   const sessionRepo = getConnection().getRepository(Session);
-  const sessions: any[] = await sessionRepo.find();
-  sessions.map((sess) => sess.userid = JSON.parse(sess.json).passport.user);
-  sessions.sort((a, b) => a.userid < b.userid ? -1 : 1);
+  const sessions = await sessionRepo.find() as SessionUser[];
+
+  sessions.forEach((sess) => sess.userId = JSON.parse(sess.json).passport.user);
+  sessions.sort((a, b) => a.userId < b.userId ? -1 : 1);
   users.sort((a, b) => a.id < b.id ? -1 : 1);
 
   const userSessions = users as UserSessions[];
@@ -53,16 +54,15 @@ export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
   let sessIdx = 0;
   let userIdx = 0;
   while (sessIdx < sessions.length && userIdx < userSessions.length) {
-    if (userSessions[userIdx].id === sessions[sessIdx].userid) {
+    if (userSessions[userIdx].id === sessions[sessIdx].userId) {
       userSessions[userIdx].sessions.push(sessions[sessIdx].id);
       sessIdx++;
-    } else if (userSessions[userIdx].id < sessions[sessIdx].userid) {
+    } else if (userSessions[userIdx].id < sessions[sessIdx].userId) {
       userIdx++;
     } else {
       sessIdx++;
     }
   }
-  // sessionRepo.manager.connection.close();
   return userSessions;
 }
 

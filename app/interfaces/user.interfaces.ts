@@ -1,4 +1,5 @@
 import {UserRole, User} from '../entities/user';
+import {Session} from '../entities/session';
 
 export interface UserBody {
   email: string;
@@ -37,4 +38,8 @@ export interface PutUpdatedUserResponse {
 
 export interface UserSessions extends User {
   sessions: string[];
+}
+
+export interface SessionUser extends Session {
+  userId: string;
 }
