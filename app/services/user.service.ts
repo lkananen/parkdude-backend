@@ -55,7 +55,7 @@ export async function getSessions(users: User[]): Promise<UserSessions[]> {
     if (userSessions[userIdx].id === sessions[sessIdx].userid) {
       (userSessions[userIdx].sessions = userSessions[userIdx].sessions || []).push(sessions[sessIdx].id);
       sessIdx++;
-    } else if (userSessions[userIdx].id < sessions[sessIdx]) {
+    } else if (userSessions[userIdx].id < sessions[sessIdx].userid) {
       userIdx++;
     } else {
       sessIdx++;
