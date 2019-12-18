@@ -1,5 +1,5 @@
 import {User, UserRole} from '../entities/user';
-import {UserBody, UserUpdateBody, UserData} from '../interfaces/user.interfaces';
+import {UserBody, UserUpdateBody, UserData, UserSessions} from '../interfaces/user.interfaces';
 import {Session} from '../entities/session';
 import {getConnection} from 'typeorm';
 
@@ -41,10 +41,36 @@ export async function deleteUser(user: User) {
   await user.remove();
 }
 
-export async function clearSession(user: User) {
+export async function getSessions(users: User[]): Promise<UserSessions[]> {
   const sessionRepo = getConnection().getRepository(Session);
-  // const sessions = await sessionRepo.find({where: {userId: user.id}});
-  const sessions = await sessionRepo.find();
-  console.log(sessions);
-  // await sessionRepo.remove(sessions);
+  const sessions: any[] = await sessionRepo.find();
+  sessions.map((sess) => sess.userid = JSON.parse(sess.json).passport.user);
+  sessions.sort((a, b) => a.userid < b.userid ? -1 : 1);
+  users.sort((a, b) => a.id < b.id ? -1 : 1);
+
+  const userSessions = users as UserSessions[];
+  let sessIdx = 0;
+  let userIdx = 0;
+  while (sessIdx < sessions.length && userIdx < userSessions.length) {
+    if (userSessions[userIdx].id === sessions[sessIdx].userid) {
+      (userSessions[userIdx].sessions = userSessions[userIdx].sessions || []).push(sessions[sessIdx].id);
+      sessIdx++;
+    } else if (userSessions[userIdx].id < sessions[sessIdx]) {
+      userIdx++;
+    } else {
+      sessIdx++;
+    }
+  }
+  // sessionRepo.manager.connection.close();
+  return userSessions;
+}
+
+export async function getSession(user: User): Promise<UserSessions> {
+  return (await getSessions(Array(user)))[0];
+}
+
+export async function clearSessions(user: UserSessions) {
+  console.log('Users in clearsessions', user);
+  const sessionRepo = getConnection().getRepository(Session);
+  await sessionRepo.delete(user.sessions);
 }
