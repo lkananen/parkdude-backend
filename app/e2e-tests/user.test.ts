@@ -215,120 +215,128 @@ describe('Users/authentication (e2e)', () => {
       await ParkingSpot.delete({});
     });
 
-    test('getUsers should return all users without filter', async () => {
-      const res = await agent
-        .get('/api/users')
-        .expect(200);
-      expect(res.body.data).toHaveLength(3);
-    });
+    describe('GET /api/users', () => {
+      test('Should return all users without filter', async () => {
+        const res = await agent
+          .get('/api/users')
+          .expect(200);
+        expect(res.body.data).toHaveLength(3);
+      });
 
-    test('getUsers should be filterable by role', async () => {
-      const res = await agent
-        .get('/api/users?role=unverified')
-        .expect(200);
-      expect(res.body.data).toHaveLength(1);
-    });
+      test('Should be filterable by role', async () => {
+        const res = await agent
+          .get('/api/users?role=unverified')
+          .expect(200);
+        expect(res.body.data).toHaveLength(1);
+      });
 
-    test('updateUser may be used to verify unverified user', async () => {
-      expect(unverifiedUser.role).toBe(UserRole.UNVERIFIED);
-      await agent
-        .put('/api/users/' + unverifiedUser.id)
-        .send({
-          email: unverifiedUser.email,
-          name: unverifiedUser.name,
-          role: UserRole.VERIFIED
-        })
-        .expect(200);
-      await unverifiedUser.reload();
-      expect(unverifiedUser.role).toBe(UserRole.VERIFIED);
-    });
+      test('Should list the sessions for all users', async () => {
+        const res = await agent
+          .get('/api/users')
+          .expect(200);
+        expect(res.body.data).toEqual(expect.arrayContaining([expect.objectContaining({
+          id: expect.any(String),
+          email: expect.any(String),
+          name: expect.any(String),
+          role: expect.any(String),
+          sessions: expect.any(Array)
+        })]));
+      });
 
-    test('deleteUser should delete user', async () => {
-      expect(await fetchUsers()).toHaveLength(3);
-      await agent
-        .delete('/api/users/' + verifiedUser.id)
-        .expect(200, {message: 'User successfully deleted'});
-      expect(await fetchUsers()).toHaveLength(2);
-    });
-
-    test('deleteUser should deown owned parking spot', async () => {
-      expect(ownedSpot.owner!.id).toBe(verifiedUser.id);
-      await agent
-        .delete('/api/users/' + verifiedUser.id);
-      expect(await fetchParkingSpots()).toHaveLength(1);
-      await ownedSpot.reload();
-      expect(ownedSpot.owner).toBe(null);
-    });
-
-    test('postClearSession should remove user\'s session', async () => {
-      const user = await getUser({email: TEST_USER_EMAIL}) as User;
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: true, userRole: UserRole.ADMIN, name: user.name});
-      await agent
-        .post('/api/users/' + user.id + '/clearSessions');
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: false});
-    });
-
-    test('getUsers should list the sessions for all users', async () => {
-      const res = await agent
-        .get('/api/users')
-        .expect(200);
-      expect(res.body.data).toEqual(expect.arrayContaining([expect.objectContaining({
-        id: expect.any(String),
-        email: expect.any(String),
-        name: expect.any(String),
-        role: expect.any(String),
-        sessions: expect.any(Array)
-      })]));
-    });
-
-    test('Admin should have a session, others should not', async () => {
-      const res = await agent
-        .get('/api/users')
-        .expect(200);
-      res.body.data.forEach((user: UserSessionData) => {
-        expect(user.sessions.length).toBe(user.role === UserRole.ADMIN ? 1 : 0);
+      test('Admin should have a session, others should not', async () => {
+        const res = await agent
+          .get('/api/users')
+          .expect(200);
+        res.body.data.forEach((user: UserSessionData) => {
+          expect(user.sessions.length).toBe(user.role === UserRole.ADMIN ? 1 : 0);
+        });
       });
     });
 
-    test('User should get multiple sessions and both will be cleared', async () => {
-      const app = await createApp();
-      const admin = await User.create({
-        name: 'Admin',
-        email: 'Admin@admin.com',
-        role: UserRole.ADMIN
-      }).save();
-      const regularUser = await User.create({
-        name: 'Regular',
-        email: 'regular@user.com',
-        role: UserRole.VERIFIED
-      }).save();
+    describe('PUT /api/users', () => {
+      test('May be used to verify unverified user', async () => {
+        expect(unverifiedUser.role).toBe(UserRole.UNVERIFIED);
+        await agent
+          .put('/api/users/' + unverifiedUser.id)
+          .send({
+            email: unverifiedUser.email,
+            name: unverifiedUser.name,
+            role: UserRole.VERIFIED
+          })
+          .expect(200);
+        await unverifiedUser.reload();
+        expect(unverifiedUser.role).toBe(UserRole.VERIFIED);
+      });
+    });
 
-      const adminAgent = request.agent(app);
-      await loginWithEmail(adminAgent, admin.email);
+    describe('DELETE /api/users', () => {
+      test('Should delete user', async () => {
+        expect(await fetchUsers()).toHaveLength(3);
+        await agent
+          .delete('/api/users/' + verifiedUser.id)
+          .expect(200, {message: 'User successfully deleted'});
+        expect(await fetchUsers()).toHaveLength(2);
+      });
 
-      const regularAgent1 = request.agent(app);
-      await loginWithEmail(regularAgent1, regularUser.email);
-      const regularAgent2 = request.agent(app);
-      await loginWithEmail(regularAgent2, regularUser.email);
+      test('Should deown owned parking spot', async () => {
+        expect(ownedSpot.owner!.id).toBe(verifiedUser.id);
+        await agent
+          .delete('/api/users/' + verifiedUser.id);
+        expect(await fetchParkingSpots()).toHaveLength(1);
+        await ownedSpot.reload();
+        expect(ownedSpot.owner).toBe(null);
+      });
+    });
 
-      // Has 2 sessions because of 2 agents
-      let res = await adminAgent
-        .get('/api/users/' + regularUser.id)
-        .expect(200);
-      expect(res.body.data.sessions).toHaveLength(2);
+    describe('POST /api/users/<userId>/clearSessions', () => {
+      test('Should remove user\'s session', async () => {
+        const user = await getUser({email: TEST_USER_EMAIL}) as User;
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: true, userRole: UserRole.ADMIN, name: user.name});
+        await agent
+          .post('/api/users/' + user.id + '/clearSessions');
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: false});
+      });
 
-      await adminAgent
-        .post('/api/users/' + regularUser.id + '/clearSessions')
-        .expect(200);
+      test('User should get two sessions and both will be cleared', async () => {
+        const app = await createApp();
+        const admin = await User.create({
+          name: 'Admin',
+          email: 'Admin@admin.com',
+          role: UserRole.ADMIN
+        }).save();
+        const regularUser = await User.create({
+          name: 'Regular',
+          email: 'regular@user.com',
+          role: UserRole.VERIFIED
+        }).save();
 
-      res = await adminAgent
-        .get('/api/users/' + regularUser.id)
-        .expect(200);
-      expect(res.body.data.sessions).toHaveLength(0);
+        const adminAgent = request.agent(app);
+        await loginWithEmail(adminAgent, admin.email);
+
+        const regularAgent1 = request.agent(app);
+        await loginWithEmail(regularAgent1, regularUser.email);
+        const regularAgent2 = request.agent(app);
+        await loginWithEmail(regularAgent2, regularUser.email);
+
+        // Has 2 sessions because of 2 agents
+        let res = await adminAgent
+          .get('/api/users/' + regularUser.id)
+          .expect(200);
+        expect(res.body.data.sessions).toHaveLength(2);
+
+        await adminAgent
+          .post('/api/users/' + regularUser.id + '/clearSessions')
+          .expect(200);
+
+        res = await adminAgent
+          .get('/api/users/' + regularUser.id)
+          .expect(200);
+        expect(res.body.data.sessions).toHaveLength(0);
+      });
     });
   });
 });
