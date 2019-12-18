@@ -50,7 +50,7 @@ export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
   users.sort((a, b) => a.id < b.id ? -1 : 1);
 
   const userSessions = users as UserSessions[];
-  userSessions.map((user) => user.sessions = []);
+  userSessions.forEach((user) => user.sessions = []);
   let sessIdx = 0;
   let userIdx = 0;
   while (sessIdx < sessions.length && userIdx < userSessions.length) {
