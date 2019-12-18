@@ -49,3 +49,7 @@ export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingS
   parkingSpot.owner = owner;
   return await parkingSpot.save();
 }
+
+export async function deleteParkingSpot(id: string) {
+  return await ParkingSpot.delete(id);
+}

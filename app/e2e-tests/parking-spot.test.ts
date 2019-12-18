@@ -8,6 +8,7 @@ import {disableErrorLogs, enableErrorLogs} from '../test-utils/logger';
 import {DayReservation} from '../entities/day-reservation';
 import {User, UserRole} from '../entities/user';
 import {DayRelease} from '../entities/day-release';
+import {fetchParkingSpots} from '../services/parking-spot.service';
 
 describe('Parking spots (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
@@ -55,6 +56,17 @@ describe('Parking spots (e2e)', () => {
       await agent
         .get('/api/parking-spots')
         .expect(200, {data: parkingSpots.map((spot) => spot.toParkingSpotData())});
+    });
+
+    test('Should return specific parking spot', async () => {
+      const parkingSpots = [
+        await ParkingSpot.create({name: 'Parking spot 1'}).save(),
+        await ParkingSpot.create({name: 'Parking spot 2'}).save(),
+      ];
+
+      await agent
+        .get('/api/parking-spots/' + parkingSpots[0].id)
+        .expect(200, {data: parkingSpots[0].toParkingSpotData()});
     });
 
     describe('Filtering by available on dates', () => {
@@ -300,6 +312,58 @@ describe('Parking spots (e2e)', () => {
             errorMessages: [expectedError]
           });
       });
+    });
+  });
+
+  describe('PUT /api/parking-spots', () => {
+    let parkingSpots: ParkingSpot[];
+
+    beforeEach(async () => {
+      await loginWithEmail(agent, adminUser.email);
+      parkingSpots = [
+        await ParkingSpot.create({name: 'Normal spot'}).save(),
+        await ParkingSpot.create({name: 'Owned spot', owner: user}).save(),
+      ];
+    });
+
+    test('Should add owner to parking spot', async () => {
+      await agent
+        .put('/api/parking-spots/' + parkingSpots[0].id)
+        .send({name: 'Normal spot', ownerEmail: user.email})
+        .expect(200);
+      await parkingSpots[0].reload();
+      await user.reload();
+      expect(parkingSpots[0].owner!.id).toBe(user.id);
+      expect(await user.ownedParkingSpots).toContain(parkingSpots[0]);
+    });
+  });
+
+  describe('DELETE /api/parking-spots', () => {
+    let parkingSpots: ParkingSpot[];
+
+    beforeEach(async () => {
+      await loginWithEmail(agent, adminUser.email);
+      parkingSpots = [
+        await ParkingSpot.create({name: 'Normal spot', owner: undefined}).save(),
+        await ParkingSpot.create({name: 'Owned spot', owner: user}).save(),
+      ];
+    });
+
+    test('Should delete parking spot', async () => {
+      expect(await fetchParkingSpots()).toHaveLength(2);
+      await agent
+        .delete('/api/parking-spots/' + parkingSpots[0].id)
+        .expect(200, {message: 'Parking spot successfully deleted.'});
+      expect(await fetchParkingSpots()).toHaveLength(1);
+    });
+
+    test('Should remove from user\'s owned spots', async () => {
+      expect(await user.ownedParkingSpots).toHaveLength(1);
+      await agent
+        .delete('/api/parking-spots/' + parkingSpots[1].id)
+        .expect(200, {message: 'Parking spot successfully deleted.'});
+      await user.reload();
+      expect(await user.ownedParkingSpots).toHaveLength(0);
     });
   });
 });
