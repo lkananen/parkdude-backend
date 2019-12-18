@@ -1,5 +1,5 @@
 import {User, UserRole} from '../entities/user';
-import {UserBody, UserUpdateBody, UserData, UserSessions} from '../interfaces/user.interfaces';
+import {UserBody, UserUpdateBody, UserSessions} from '../interfaces/user.interfaces';
 import {Session} from '../entities/session';
 import {getConnection} from 'typeorm';
 
@@ -41,7 +41,7 @@ export async function deleteUser(user: User) {
   await user.remove();
 }
 
-export async function getSessions(users: User[]): Promise<UserSessions[]> {
+export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
   const sessionRepo = getConnection().getRepository(Session);
   const sessions: any[] = await sessionRepo.find();
   sessions.map((sess) => sess.userid = JSON.parse(sess.json).passport.user);
@@ -66,12 +66,11 @@ export async function getSessions(users: User[]): Promise<UserSessions[]> {
   return userSessions;
 }
 
-export async function getSession(user: User): Promise<UserSessions> {
-  return (await getSessions(Array(user)))[0];
+export async function getUserSession(user: User): Promise<UserSessions> {
+  return (await getUsersSessions(Array(user)))[0];
 }
 
 export async function clearSessions(user: UserSessions) {
-  console.log('Users in clearsessions', user);
   const sessionRepo = getConnection().getRepository(Session);
   await sessionRepo.delete(user.sessions);
 }

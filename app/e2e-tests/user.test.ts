@@ -6,6 +6,7 @@ import {loginWithEmail, createAppWithAdminSession, TEST_USER_EMAIL} from '../tes
 import {fetchUsers, getUser} from '../services/user.service';
 import {ParkingSpot} from '../entities/parking-spot';
 import {fetchParkingSpots} from '../services/parking-spot.service';
+import {UserSessionData} from '../interfaces/user.interfaces';
 
 describe('Users/authentication (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
@@ -265,10 +266,69 @@ describe('Users/authentication (e2e)', () => {
         .get('/api/auth/login-state')
         .expect({isAuthenticated: true, userRole: UserRole.ADMIN, name: user.name});
       await agent
-        .post('/api/users/' + user.id + '/clearSession');
+        .post('/api/users/' + user.id + '/clearSessions');
       await agent
         .get('/api/auth/login-state')
         .expect({isAuthenticated: false});
+    });
+
+    test('getUsers should list the sessions for all users', async () => {
+      const res = await agent
+        .get('/api/users')
+        .expect(200);
+      expect(res.body.data).toEqual(expect.arrayContaining([expect.objectContaining({
+        id: expect.any(String),
+        email: expect.any(String),
+        name: expect.any(String),
+        role: expect.any(String),
+        sessions: expect.any(Array)
+      })]));
+    });
+
+    test('Admin should have a session, others should not', async () => {
+      const res = await agent
+        .get('/api/users')
+        .expect(200);
+      res.body.data.forEach((user: UserSessionData) => {
+        expect(user.sessions.length).toBe(user.role === UserRole.ADMIN ? 1 : 0);
+      });
+    });
+
+    test('User should get multiple sessions and both will be cleared', async () => {
+      const app = await createApp();
+      const admin = await User.create({
+        name: 'Admin',
+        email: 'Admin@admin.com',
+        role: UserRole.ADMIN
+      }).save();
+      const regularUser = await User.create({
+        name: 'Regular',
+        email: 'regular@user.com',
+        role: UserRole.VERIFIED
+      }).save();
+
+      const adminAgent = request.agent(app);
+      await loginWithEmail(adminAgent, admin.email);
+
+      const regularAgent1 = request.agent(app);
+      await loginWithEmail(regularAgent1, regularUser.email);
+      const regularAgent2 = request.agent(app);
+      await loginWithEmail(regularAgent2, regularUser.email);
+
+      // Has 2 sessions because of 2 agents
+      let res = await adminAgent
+        .get('/api/users/' + regularUser.id)
+        .expect(200);
+      expect(res.body.data.sessions).toHaveLength(2);
+
+      await adminAgent
+        .post('/api/users/' + regularUser.id + '/clearSessions')
+        .expect(200);
+
+      res = await adminAgent
+        .get('/api/users/' + regularUser.id)
+        .expect(200);
+      expect(res.body.data.sessions).toHaveLength(0);
     });
   });
 });

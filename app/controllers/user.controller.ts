@@ -7,13 +7,13 @@ import {UserRole} from '../entities/user';
 import {GenericResponse} from '../interfaces/general.interfaces';
 import {
   fetchUsers, fetchUser, updateUser, deleteUser,
-  clearSessions, getSession, getSessions
+  clearSessions, getUserSession, getUsersSessions
 } from '../services/user.service';
 
 export async function getUsers(req: Request, res: Response) {
   const roleFilter: UserRole | undefined = req.query.role;
   const users = await fetchUsers(roleFilter);
-  const usersSessions = await getSessions(users);
+  const usersSessions = await getUsersSessions(users);
   const json: GetUsersResponse = {
     data: usersSessions.map((user) => {
       return {...user.toUserData(), sessions: user.sessions};
@@ -25,7 +25,7 @@ export async function getUsers(req: Request, res: Response) {
 export async function getUser(req: Request, res: Response) {
   const userId = req.params.userId;
   const user = await fetchUser(userId);
-  const userSessions = await getSession(user);
+  const userSessions = await getUserSession(user);
   const json: GetUserResponse = {
     data: {...user.toUserData(), sessions: userSessions.sessions}
   };
@@ -58,10 +58,10 @@ export async function deleteDeleteUser(req: Request, res: Response) {
   res.status(200).json(json);
 }
 
-export async function postClearSession(req: Request, res: Response) {
+export async function postClearSessions(req: Request, res: Response) {
   const userId = req.params.userId;
   const user = await fetchUser(userId);
-  const userSessions = await getSession(user);
+  const userSessions = await getUserSession(user);
   await clearSessions(userSessions);
 
   const json: GenericResponse = {
