@@ -87,7 +87,7 @@ export interface ParkingSpotDayStatus {
   reservationId?: string | null;
   releaseId?: string | null;
   reserverId?: string | null;
-  date: string | null;
+  date: string;
 }
 
 export interface QueriedParkingSpotDayStatus {
@@ -96,6 +96,5 @@ export interface QueriedParkingSpotDayStatus {
   reservationid?: string | null;
   releaseid?: string | null;
   reserverid?: string | null;
-  reservationdate: Date | null;
-  releasedate: Date | null;
+  spotdate: Date;
 }

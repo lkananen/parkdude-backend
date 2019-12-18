@@ -804,7 +804,7 @@ describe('Parking reservations (e2e)', () => {
           });
       });
 
-      test('Should reserve from different spots if same is not (spot not specified)', async () => {
+      test('Should reserve from different spots if same is not available (spot not specified)', async () => {
         // Reserve some spots
         await agent.post('/api/parking-reservations')
           .send({
@@ -933,6 +933,22 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+      });
+
+      test('Should reserve spot that is reserved for another day', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
+        // Reserve for different day
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-02'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
       });
     });
 
