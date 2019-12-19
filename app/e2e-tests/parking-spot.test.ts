@@ -198,29 +198,30 @@ describe('Parking spots (e2e)', () => {
             });
         });
 
-        test('Should filter when spot has owners and is released for one of the days, but not all of them', async () => {
-          parkingSpots[0].owner = user;
-          parkingSpots[1].owner = adminUser;
-          parkingSpots[0] = await parkingSpots[0].save();
-          parkingSpots[1] = await parkingSpots[1].save();
+        test('Should filter when spot has owners and is released for one of the days, but not all of them',
+          async () => {
+            parkingSpots[0].owner = user;
+            parkingSpots[1].owner = adminUser;
+            parkingSpots[0] = await parkingSpots[0].save();
+            parkingSpots[1] = await parkingSpots[1].save();
 
-          await DayRelease.create({
-            spotId: parkingSpots[0].id,
-            date: '2019-11-01'
-          }).save();
-          await DayRelease.create({
-            spotId: parkingSpots[1].id,
-            date: '2019-11-01'
-          }).save();
+            await DayRelease.create({
+              spotId: parkingSpots[0].id,
+              date: '2019-11-01'
+            }).save();
+            await DayRelease.create({
+              spotId: parkingSpots[1].id,
+              date: '2019-11-01'
+            }).save();
 
-          await agent
-            .get('/api/parking-spots?availableOnDates=2019-11-01,2019-11-02')
-            .expect(200, {
-              data: [
-                parkingSpots[2].toParkingSpotData()
-              ]
-            });
-        });
+            await agent
+              .get('/api/parking-spots?availableOnDates=2019-11-01,2019-11-02')
+              .expect(200, {
+                data: [
+                  parkingSpots[2].toParkingSpotData()
+                ]
+              });
+          });
 
         test('Should filter when owned spot is released and then reserved', async () => {
           parkingSpots[0].owner = user;
