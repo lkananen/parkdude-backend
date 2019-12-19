@@ -30,8 +30,6 @@ export async function getParkingSpots(req: Request, res: Response) {
   res.status(200).json(json);
 }
 
-// TODO: Tests and validation
-
 export async function getParkingSpot(req: Request, res: Response) {
   const parkingSpot = await fetchParkingspot(req.params.spotId);
   const json: GetParkingspotResponse = {

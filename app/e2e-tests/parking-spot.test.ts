@@ -270,6 +270,7 @@ describe('Parking spots (e2e)', () => {
           expect(parkingSpot.id).toBeDefined();
           expect(new Date(parkingSpot.created) < new Date());
           expect(new Date(parkingSpot.updated) < new Date());
+          expect(parkingSpot.owner).toBe(null);
         });
     });
 
@@ -314,6 +315,20 @@ describe('Parking spots (e2e)', () => {
             message: `Validation failed:\n${expectedError}`,
             errorMessages: [expectedError]
           });
+      });
+      test('Should fail if owner cannot be found', async () => {
+        const expectedError = {message: 'Could not find user with email: dev@null'};
+        await agent
+          .post('/api/parking-spots')
+          .send({name: 'Broken spot', ownerEmail: 'dev@null'})
+          .expect(409, expectedError);
+      });
+      test('Should fail if ownerEmail has empty string', async () => {
+        const expectedError = {message: 'Could not find user with email: '};
+        await agent
+          .post('/api/parking-spots')
+          .send({name: 'Broken spot', ownerEmail: ''})
+          .expect(409, expectedError);
       });
     });
   });
@@ -422,6 +437,13 @@ describe('Parking spots (e2e)', () => {
         await agent
           .put('/api/parking-spots/' + parkingSpots[1].id)
           .send({name: 'Permanent spot', ownerEmail: 'dev@null'})
+          .expect(409);
+      });
+
+      test('Should 409 if user has no value', async () => {
+        await agent
+          .put('/api/parking-spots/' + parkingSpots[1].id)
+          .send({name: 'Permanent spot', ownerEmail: {}})
           .expect(409);
       });
     });

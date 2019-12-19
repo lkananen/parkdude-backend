@@ -39,19 +39,12 @@ export async function fetchParkingspot(id: string): Promise<ParkingSpot> {
 }
 
 export async function createParkingSpot({name, ownerEmail}: ParkingSpotBody): Promise<ParkingSpot> {
-  const owner = ownerEmail ? await User.findOne({email: ownerEmail}) : undefined;
+  const owner = await getOwner(ownerEmail);
   return await ParkingSpot.create({name, owner}).save();
 }
 
 export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingSpotBody) {
-  let owner = null;
-  if (ownerEmail) {
-    try {
-      owner = await User.findOneOrFail({email: ownerEmail});
-    } catch (err) {
-      throw new ConflictError('Could not find user ' + ownerEmail);
-    }
-  }
+  const owner = await getOwner(ownerEmail);
   const parkingSpot = await ParkingSpot.findOneOrFail({id});
   parkingSpot.name = name;
   parkingSpot.owner = owner;
@@ -60,4 +53,15 @@ export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingS
 
 export async function deleteParkingSpot(id: string) {
   return await ParkingSpot.delete(id);
+}
+
+async function getOwner(ownerEmail: string | undefined): Promise<User | null> {
+  if (ownerEmail === undefined) {
+    return null;
+  }
+  try {
+    return await User.findOneOrFail({email: ownerEmail});
+  } catch (err) {
+    throw new ConflictError('Could not find user with email: ' + ownerEmail);
+  }
 }
