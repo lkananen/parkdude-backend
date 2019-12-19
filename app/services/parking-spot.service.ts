@@ -4,6 +4,7 @@ import {User} from '../entities/user';
 import {getManager} from 'typeorm';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
+import {ConflictError} from '../utils/errors';
 
 export async function fetchParkingSpots(availableOnDates?: string[]): Promise<ParkingSpot[]> {
   if (!availableOnDates) {
@@ -43,7 +44,14 @@ export async function createParkingSpot({name, ownerEmail}: ParkingSpotBody): Pr
 }
 
 export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingSpotBody) {
-  const owner = ownerEmail ? await User.findOne({email: ownerEmail}) : undefined;
+  let owner = undefined;
+  if (ownerEmail) {
+    try {
+      owner = await User.findOneOrFail({email: ownerEmail});
+    } catch (err) {
+      throw new ConflictError('Could not find user ' + ownerEmail);
+    }
+  }
   const parkingSpot = await ParkingSpot.findOneOrFail({id});
   parkingSpot.name = name;
   parkingSpot.owner = owner;

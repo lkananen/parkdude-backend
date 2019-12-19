@@ -3,7 +3,10 @@ import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
 import {ParkingSpotData} from '../interfaces/parking-spot.interfaces';
 import {closeConnection} from '../test-utils/teardown';
-import {createAppWithNormalSession, TEST_USER_EMAIL, loginWithEmail} from '../test-utils/test-login';
+import {
+  createAppWithNormalSession, TEST_USER_EMAIL, loginWithEmail,
+  createAppWithAdminSession
+} from '../test-utils/test-login';
 import {disableErrorLogs, enableErrorLogs} from '../test-utils/logger';
 import {DayReservation} from '../entities/day-reservation';
 import {User, UserRole} from '../entities/user';
@@ -315,26 +318,112 @@ describe('Parking spots (e2e)', () => {
     });
   });
 
+
   describe('PUT /api/parking-spots', () => {
     let parkingSpots: ParkingSpot[];
 
     beforeEach(async () => {
-      await loginWithEmail(agent, adminUser.email);
+      agent = await createAppWithAdminSession();
+      user = await User.create({
+        name: 'Employee #4324',
+        email: 'joe@company.com',
+        role: UserRole.VERIFIED
+      }).save();
+
       parkingSpots = [
         await ParkingSpot.create({name: 'Normal spot'}).save(),
-        await ParkingSpot.create({name: 'Owned spot', owner: user}).save(),
+        await ParkingSpot.create({name: 'Permanent spot', owner: user}).save(),
       ];
+
+      // Refresh users, .reload() will not include the referenced relation.
+      user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
+      adminUser = await User.findOneOrFail({where: {email: TEST_USER_EMAIL}, relations: ['ownedParkingSpots']});
+    });
+
+    afterEach(async () => {
+      User.delete({});
+      ParkingSpot.delete({});
     });
 
     test('Should add owner to parking spot', async () => {
+      expect(await user.ownedParkingSpots).toHaveLength(1);
+
       await agent
         .put('/api/parking-spots/' + parkingSpots[0].id)
         .send({name: 'Normal spot', ownerEmail: user.email})
         .expect(200);
+
       await parkingSpots[0].reload();
-      await user.reload();
+      user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
       expect(parkingSpots[0].owner!.id).toBe(user.id);
-      expect(await user.ownedParkingSpots).toContain(parkingSpots[0]);
+      expect(await user.ownedParkingSpots).toHaveLength(2);
+      expect((await user.ownedParkingSpots)[1].id).toBe(parkingSpots[0].id);
+    });
+
+    test('Should remove owner from parking spot with missing key', async () => {
+      expect(await user.ownedParkingSpots).toHaveLength(1);
+
+      await agent
+        .put('/api/parking-spots/' + parkingSpots[1].id)
+        .send({name: 'Permanent spot'})
+        .expect(200);
+      const spot = await ParkingSpot.findOneOrFail({where: {id: parkingSpots[1].id}, relations: ['owner']});
+      user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
+
+      expect(spot).toBe(null);
+      expect(await user.ownedParkingSpots).toHaveLength(0);
+    });
+
+    test('Should change owner of parking spot', async () => {
+      expect(await user.ownedParkingSpots).toHaveLength(1);
+      expect(await adminUser.ownedParkingSpots).toHaveLength(0);
+      expect(parkingSpots[1].owner!.email).toBe(user.email);
+
+      await agent
+        .put('/api/parking-spots/' + parkingSpots[1].id)
+        .send({name: 'Permanent spot', ownerEmail: TEST_USER_EMAIL})
+        .expect(200);
+
+      await parkingSpots[1].reload();
+      user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
+      adminUser = await User.findOneOrFail({where: {email: TEST_USER_EMAIL}, relations: ['ownedParkingSpots']});
+
+      expect(await user.ownedParkingSpots).toHaveLength(0);
+      expect(await adminUser.ownedParkingSpots).toHaveLength(1);
+      expect(parkingSpots[1].owner!.email).toBe(adminUser.email);
+    });
+
+    test('Should update spot name', async () => {
+      const newName = 'Updated spot';
+      await agent
+        .put('/api/parking-spots/' + parkingSpots[0].id)
+        .send({name: newName, ownerEmail: user.email})
+        .expect(200);
+      await parkingSpots[0].reload();
+      expect(parkingSpots[0].name).toBe(newName);
+    });
+
+    describe('Error handling', () => {
+      test('Should 400 with missing name', async () => {
+        await agent
+          .put('/api/parking-spots/' + parkingSpots[1].id)
+          .send({name: ''})
+          .expect(400);
+      });
+
+      test('Should 404 with nonexistent spot', async () => {
+        await agent
+          .put('/api/parking-spots/123e4567-e89b-12d3-a456-426655440000')
+          .send({name: 'New name'})
+          .expect(404);
+      });
+
+      test('Should 409 if user is not found', async () => {
+        await agent
+          .put('/api/parking-spots/' + parkingSpots[1].id)
+          .send({name: 'Permanent spot', ownerEmail: 'dev@null'})
+          .expect(409);
+      });
     });
   });
 
@@ -342,11 +431,26 @@ describe('Parking spots (e2e)', () => {
     let parkingSpots: ParkingSpot[];
 
     beforeEach(async () => {
-      await loginWithEmail(agent, adminUser.email);
+      agent = await createAppWithAdminSession();
+      adminUser = await User.findOneOrFail({email: TEST_USER_EMAIL});
+      user = await User.create({
+        name: 'Employee #4324',
+        email: 'joe@company.com',
+        role: UserRole.VERIFIED
+      }).save();
+
       parkingSpots = [
-        await ParkingSpot.create({name: 'Normal spot', owner: undefined}).save(),
-        await ParkingSpot.create({name: 'Owned spot', owner: user}).save(),
+        await ParkingSpot.create({name: 'Normal spot'}).save(),
+        await ParkingSpot.create({name: 'Permanent spot', owner: user}).save(),
       ];
+
+      // Reload user, .reload() will not include the referenced relation.
+      user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
+    });
+
+    afterEach(async () => {
+      User.delete({});
+      ParkingSpot.delete({});
     });
 
     test('Should delete parking spot', async () => {
@@ -359,10 +463,12 @@ describe('Parking spots (e2e)', () => {
 
     test('Should remove from user\'s owned spots', async () => {
       expect(await user.ownedParkingSpots).toHaveLength(1);
+      expect((await user.ownedParkingSpots)[0].id).toBe(parkingSpots[1].id);
+
       await agent
         .delete('/api/parking-spots/' + parkingSpots[1].id)
         .expect(200, {message: 'Parking spot successfully deleted.'});
-      await user.reload();
+      user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
       expect(await user.ownedParkingSpots).toHaveLength(0);
     });
   });
