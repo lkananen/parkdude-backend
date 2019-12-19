@@ -370,7 +370,7 @@ describe('Parking spots (e2e)', () => {
       const spot = await ParkingSpot.findOneOrFail({where: {id: parkingSpots[1].id}, relations: ['owner']});
       user = await User.findOneOrFail({where: {id: user.id}, relations: ['ownedParkingSpots']});
 
-      expect(spot).toBe(null);
+      expect(spot.owner).toBe(null);
       expect(await user.ownedParkingSpots).toHaveLength(0);
     });
 

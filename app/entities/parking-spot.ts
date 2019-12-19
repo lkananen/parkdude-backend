@@ -29,7 +29,7 @@ export class ParkingSpot extends BaseEntity {
     eager: true,
     onDelete: 'SET NULL'
   })
-  owner?: User;
+  owner: User | null;
 
   @CreateDateColumn()
   created: Date;

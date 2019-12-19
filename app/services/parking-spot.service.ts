@@ -44,7 +44,7 @@ export async function createParkingSpot({name, ownerEmail}: ParkingSpotBody): Pr
 }
 
 export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingSpotBody) {
-  let owner = undefined;
+  let owner = null;
   if (ownerEmail) {
     try {
       owner = await User.findOneOrFail({email: ownerEmail});
