@@ -5,68 +5,38 @@ import {
 } from '../interfaces/user.interfaces';
 import {UserRole} from '../entities/user';
 import {GenericResponse} from '../interfaces/general.interfaces';
-
+import {
+  fetchUsers, fetchUser, updateUser, deleteUser,
+  clearSessions, getUserSession, getUsersSessions
+} from '../services/user.service';
 
 export async function getUsers(req: Request, res: Response) {
-  // TODO: Implement properly
-
-  // Users can be filtered by role
   const roleFilter: UserRole | undefined = req.query.role;
-  if (roleFilter === UserRole.UNVERIFIED) {
-    res.status(200).json({
-      data: [{
-        id: '125',
-        email: 'tester3@example.com',
-        name: 'Tester 3',
-        role: UserRole.UNVERIFIED
-      }]
-    });
-    return;
-  }
+  const users = await fetchUsers(roleFilter);
+  const usersSessions = await getUsersSessions(users);
   const json: GetUsersResponse = {
-    data: [{
-      id: '123',
-      email: 'tester@example.com',
-      name: 'Tester',
-      role: UserRole.ADMIN
-    }, {
-      id: '124',
-      email: 'tester2@example.com',
-      name: 'Tester 2',
-      role: UserRole.VERIFIED
-    }, {
-      id: '125',
-      email: 'tester3@example.com',
-      name: 'Tester 3',
-      role: UserRole.UNVERIFIED
-    }, {
-      id: '126',
-      email: 'tester4@example.com',
-      name: 'Tester 4',
-      role: UserRole.SLACK
-    }]
+    data: usersSessions.map((user) => {
+      return {...user.toUserData(), sessions: user.sessions};
+    })
   };
   res.status(200).json(json);
 }
 
 export async function getUser(req: Request, res: Response) {
-  // TODO: Implement
   const userId = req.params.userId;
+  const user = await fetchUser(userId);
+  const userSessions = await getUserSession(user);
   const json: GetUserResponse = {
-    data: {
-      id: '123',
-      email: 'tester@example.com',
-      name: 'Tester',
-      role: UserRole.ADMIN
-    }
+    data: {...user.toUserData(), sessions: userSessions.sessions}
   };
   res.status(200).json(json);
 }
 
 export async function putUpdatedUser(req: Request, res: Response) {
-  // TODO: Implement
   const userId = req.params.userId;
-  const data: UserUpdateBody = req.body;
+  const user = await fetchUser(userId);
+  let data: UserUpdateBody = req.body;
+  data = await updateUser(user, data);
   const json: PutUpdatedUserResponse = {
     message: 'User successfully updated',
     data: {
@@ -77,12 +47,25 @@ export async function putUpdatedUser(req: Request, res: Response) {
   res.status(200).json(json);
 }
 
-
-export async function deleteUser(req: Request, res: Response) {
-  // TODO: Implement
+export async function deleteDeleteUser(req: Request, res: Response) {
   const userId = req.params.userId;
+  // May not want to allow deleting self
+  const user = await fetchUser(userId);
+  await deleteUser(user);
   const json: GenericResponse = {
     message: 'User successfully deleted'
+  };
+  res.status(200).json(json);
+}
+
+export async function postClearSessions(req: Request, res: Response) {
+  const userId = req.params.userId;
+  const user = await fetchUser(userId);
+  const userSessions = await getUserSession(user);
+  await clearSessions(userSessions);
+
+  const json: GenericResponse = {
+    message: 'User\'s session cleared'
   };
   res.status(200).json(json);
 }

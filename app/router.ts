@@ -8,7 +8,7 @@ import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
-import {getUsers, getUser, putUpdatedUser, deleteUser} from './controllers/user.controller';
+import {getUsers, getUser, putUpdatedUser, deleteDeleteUser, postClearSessions} from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations, deleteReservations
 } from './controllers/parking-reservation.controller';
@@ -31,7 +31,8 @@ export function createRouter(): Router {
   router.get('/users', adminRoleRequired, asyncWrapper(getUsers));
   router.get('/users/:userId', adminRoleRequired, asyncWrapper(getUser));
   router.put('/users/:userId', adminRoleRequired, asyncWrapper(putUpdatedUser));
-  router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteUser));
+  router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteDeleteUser));
+  router.post('/users/:userId/clearSessions', adminRoleRequired, asyncWrapper(postClearSessions));
 
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
