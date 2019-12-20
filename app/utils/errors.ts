@@ -27,3 +27,9 @@ export class ReleaseFailedError extends Error {
     super(message);
   }
 }
+
+export class ConflictError extends StatusError {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}

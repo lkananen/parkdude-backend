@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import {
   fetchParkingSpots, createParkingSpot,
-  updateParkingSpot, fetchParkingspot
+  updateParkingSpot, fetchParkingspot, deleteParkingSpot
 } from '../services/parking-spot.service';
 import {
   PostParkingSpotResponse, PutUpdatedParkingSpotResponse,
@@ -30,8 +30,6 @@ export async function getParkingSpots(req: Request, res: Response) {
   res.status(200).json(json);
 }
 
-// TODO: Tests and validation
-
 export async function getParkingSpot(req: Request, res: Response) {
   const parkingSpot = await fetchParkingspot(req.params.spotId);
   const json: GetParkingspotResponse = {
@@ -52,7 +50,7 @@ export async function postParkingSpot(req: Request, res: Response) {
 
 export async function putUpdatedParkingSpot(req: Request, res: Response) {
   const data: ParkingSpotBody = req.body;
-  const parkingSpot = await updateParkingSpot(req.params.id, data);
+  const parkingSpot = await updateParkingSpot(req.params.spotId, data);
   const json: PutUpdatedParkingSpotResponse = {
     message: 'Parking spot successfully updated.',
     data: parkingSpot.toParkingSpotData()
@@ -61,9 +59,9 @@ export async function putUpdatedParkingSpot(req: Request, res: Response) {
 }
 
 export async function deleteParkingspot(req: Request, res: Response) {
+  await deleteParkingSpot(req.params.spotId);
   const json: GenericResponse = {
     message: 'Parking spot successfully deleted.'
   };
-  // TODO: Implement
   res.status(200).json(json);
 }
