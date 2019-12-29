@@ -51,3 +51,12 @@ export function validateDateRange(startDate: string, endDate: string, maxRange: 
     throw new BadRequestError(`Date range is too long (over ${maxRange} days).`);
   }
 }
+
+export function formatDateRange(startDate: string, endDate: string) {
+  return startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} - ${formatDate(endDate)}`;
+}
+
+function formatDate(date: string) {
+  const [year, month, day] = date.split('-');
+  return `${day}.${month}.${year}`;
+}

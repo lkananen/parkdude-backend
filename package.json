@@ -70,6 +70,7 @@
     "@types/passport-google-oauth": "^1.0.41",
     "@types/rimraf": "^2.0.2",
     "aws-serverless-express": "^3.3.6",
+    "axios": "^0.19.0",
     "class-validator": "^0.10.1",
     "connect-typeorm": "^1.1.1",
     "cookie-parser": "^1.4.4",

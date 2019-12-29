@@ -102,3 +102,10 @@ export interface QueriedParkingSpotDayStatus {
   reserverid?: string | null;
   spotdate: Date;
 }
+
+export interface ReservationRange {
+  startDate: string;
+  endDate: string;
+  spotId: string;
+  spotName: string;
+}

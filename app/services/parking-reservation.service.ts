@@ -8,6 +8,7 @@ import {
   CalendarEntry, Calendar, ParkingSpotDayStatus, QueriedParkingSpotDayStatus
 } from '../interfaces/parking-reservation.interfaces';
 import {ReservationFailedError, ReleaseFailedError} from '../utils/errors';
+import {sendReservationSlackNotification, sendReleaseSlackNotification} from './slack.service';
 
 // Always true if condition to simplify conditional where queries
 const ALWAYS_TRUE = '1=1';
@@ -223,8 +224,14 @@ export async function reserveSpots(dates: string[], user: User, parkingSpotId?: 
       user
     }));
     const reservationIds = (await transactionManager.save(reservations)).map((reservation) => reservation.id);
+
     // Must be fetched again to get full information
-    return await transactionManager.getRepository(DayReservation).findByIds(reservationIds, {order: {date: 'ASC'}});
+    const updatedReservations = await transactionManager
+      .getRepository(DayReservation)
+      .findByIds(reservationIds, {order: {date: 'ASC'}, relations: ['spot', 'user']});
+    // Fail silently so that user does not get these errors
+    await sendReservationSlackNotification(updatedReservations, user).catch(() => {});
+    return updatedReservations;
   });
 }
 
@@ -275,7 +282,7 @@ function getAvailabilityByDate(
 
 export async function releaseSpots(dates: string[], user: User, parkingSpotId: string) {
   return await getConnection().transaction(async (transactionManager) => {
-    await transactionManager.getRepository(ParkingSpot).findOneOrFail(parkingSpotId);
+    const spot = await transactionManager.getRepository(ParkingSpot).findOneOrFail(parkingSpotId);
     const spotStatuses: ParkingSpotDayStatus[] = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
       .leftJoin(`(values (date '${dates.join('\'),(date \'')}'))`, 'spotDate', '1=1')
       .leftJoin(
@@ -318,6 +325,9 @@ export async function releaseSpots(dates: string[], user: User, parkingSpotId: s
     if (releasesToAdd.length) {
       await transactionManager.save(releasesToAdd);
     }
+
+    // Fail silently to not show user the error message
+    await sendReleaseSlackNotification(spotStatuses, spot).catch(() => {});
   });
 }
 
