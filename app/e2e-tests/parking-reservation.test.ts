@@ -1492,7 +1492,10 @@ describe('Parking reservations (e2e)', () => {
       test('Should release multiple owned spots', async () => {
         parkingSpots[1].owner = user;
         await parkingSpots[1].save();
-        await agent.delete(`/api/parking-reservations/parking-spot/${parkingSpots[1].id}?dates=2019-11-05,2019-11-01,2019-11-02,2019-11-03,2019-11-30`)
+        await agent.delete(
+          `/api/parking-reservations/parking-spot/${parkingSpots[1].id}?` +
+          'dates=2019-11-05,2019-11-01,2019-11-02,2019-11-03,2019-11-30'
+        )
           .expect(200, {message: 'Parking reservations successfully released.'});
 
         await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
