@@ -15,9 +15,9 @@ export async function getUsers(req: Request, res: Response) {
   const users = await fetchUsers(roleFilter);
   const usersSessions = await getUsersSessions(users);
   const json: GetUsersResponse = {
-    data: usersSessions.map((user) => {
-      return {...user.toUserData(), sessions: user.sessions};
-    })
+    data: await Promise.all(usersSessions.map(async (user) => {
+      return {...await user.toFullUserData(), sessions: user.sessions};
+    }))
   };
   res.status(200).json(json);
 }
@@ -27,7 +27,7 @@ export async function getUser(req: Request, res: Response) {
   const user = await fetchUser(userId);
   const userSessions = await getUserSession(user);
   const json: GetUserResponse = {
-    data: {...user.toUserData(), sessions: userSessions.sessions}
+    data: {...await user.toFullUserData(), sessions: userSessions.sessions}
   };
   res.status(200).json(json);
 }

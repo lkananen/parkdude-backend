@@ -1,5 +1,6 @@
 import {UserRole, User} from '../entities/user';
 import {Session} from '../entities/session';
+import {BasicParkingSpotData} from './parking-spot.interfaces';
 
 export interface UserBody {
   email: string;
@@ -13,7 +14,12 @@ export interface UserData {
   role: UserRole;
 }
 
-export interface UserSessionData extends UserData {
+export interface FullUserData extends UserData {
+  ownedParkingSpots: BasicParkingSpotData[];
+  requestCount: number;
+}
+
+export interface UserSessionData extends FullUserData {
   sessions: string[];
 }
 

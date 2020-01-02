@@ -24,6 +24,11 @@ describe('User service', () => {
     // Passwords are not selected by default, so set them as undefined for equals to match
     user1.password = undefined;
     user2.password = undefined;
+    // Needed for equals to match
+    user1.requestCount = 0;
+    user2.requestCount = 0;
+    (user1 as any).__ownedParkingSpots__ = [];
+    (user2 as any).__ownedParkingSpots__ = [];
   });
 
   afterAll(async () => {
@@ -32,11 +37,14 @@ describe('User service', () => {
   });
 
   test('getUser should get user by email', async () => {
-    expect(await getUser({email: user1.email})).toEqual(user1);
+    const user = await getUser({email: user1.email});
+    expect(user).toBeDefined();
+    expect(user!!.email).toEqual(user1.email);
+    expect(user!!.id).toEqual(user1.id);
   });
 
   test('fetchUsers should get all users', async () => {
-    expect(await fetchUsers()).toEqual([user1, user2]);
+    expect(await fetchUsers()).toEqual([user2, user1]);
   });
 
   test('getOrCreateUser creates a new user if no match', async () => {

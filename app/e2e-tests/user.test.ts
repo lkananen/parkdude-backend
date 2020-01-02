@@ -7,201 +7,206 @@ import {fetchUsers, getUser} from '../services/user.service';
 import {ParkingSpot} from '../entities/parking-spot';
 import {fetchParkingSpots} from '../services/parking-spot.service';
 import {UserSessionData} from '../interfaces/user.interfaces';
+import {DayReservation} from '../entities/day-reservation';
 
-describe('Users/authentication (e2e)', () => {
+describe('Users (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
 
   afterAll(async () => {
     await closeConnection();
   });
 
-
-  describe('No user', () => {
-    beforeAll(async () => {
-      agent = request.agent(await createApp());
-    });
-
-    test('Should check logged out', async () => {
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: false});
-    });
-
-    test('Should not be able to reserve spot', async () => {
-      await agent
-        .post('/api/parking-reservations')
-        .expect(401, {'message': 'Verified account required.'});
-    });
-
-    test('Should fail to add new parking spots', async () => {
-      await agent
-        .post('/api/parking-spots')
-        .send({name: 'spot1'})
-        .expect(401);
-    });
-  });
-
-
-  describe('Unverified user', () => {
-    const name = 'Tester';
-    const email = 'tester@unverified.com';
-
-    beforeEach(async () => {
-      agent = request.agent(await createApp());
-      await loginWithEmail(agent, email, name);
-    });
-    test('Should check logged in', async () => {
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: true, userRole: UserRole.UNVERIFIED, name});
-    });
-
-    test('Should not be able to reserve spot', async () => {
-      await agent
-        .post('/api/parking-reservations')
-        .expect(403, {message: 'Verified account required.'});
-    });
-
-    test('Should fail to add new parking spots', async () => {
-      await agent
-        .post('/api/parking-spots')
-        .send({name: 'spot1'})
-        .expect(403);
-    });
-  });
-
-
-  describe('Verified user', () => {
-    const name = 'Tester';
-    const email = 'tester' + process.env.COMPANY_EMAIL;
-
-    beforeEach(async () => {
-      agent = request.agent(await createApp());
-      await loginWithEmail(agent, email, name);
-    });
-
-    test('Should check logged in', async () => {
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name});
-    });
-
-    test('Should be able to get parking spots', async () => {
-      await agent
-        .get('/api/parking-spots')
-        .expect(200);
-    });
-
-    test('Should fail to add new parking spots', async () => {
-      await agent
-        .post('/api/parking-spots')
-        .send({name: 'spot1'})
-        .expect(403);
-    });
-  });
-
-
-  describe('Admin user', () => {
-    beforeEach(async () => {
-      agent = await createAppWithAdminSession();
-    });
-    afterEach(async () => {
-      await User.delete({});
-    });
-
-    test('Should be able to get parking spots', async () => {
-      await agent
-        .get('/api/parking-spots')
-        .expect(200);
-    });
-
-    test('Should manage to add new parking spots', async () => {
-      await agent
-        .post('/api/parking-spots')
-        .send({name: 'spot1'})
-        .expect(201);
-    });
-  });
-
-
-  describe('Authentication logic', () => {
-    let initialUser: User;
-
-    beforeEach(async () => {
-      initialUser = User.create({
-        name: 'Test1',
-        email: 'test@example.com',
-        role: UserRole.VERIFIED
+  describe('Authentication', () => {
+    describe('No user', () => {
+      beforeAll(async () => {
+        agent = request.agent(await createApp());
       });
-      agent = request.agent(await createApp());
-      await initialUser.save();
-    });
-    afterEach(async () => {
-      await User.delete({});
+
+      test('Should check logged out', async () => {
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: false});
+      });
+
+      test('Should not be able to reserve spot', async () => {
+        await agent
+          .post('/api/parking-reservations')
+          .expect(401, {'message': 'Verified account required.'});
+      });
+
+      test('Should fail to add new parking spots', async () => {
+        await agent
+          .post('/api/parking-spots')
+          .send({name: 'spot1'})
+          .expect(401);
+      });
     });
 
-    test('Should be 1 user initially', async () => {
-      expect(await fetchUsers()).toHaveLength(1);
+
+    describe('Unverified user', () => {
+      const name = 'Tester';
+      const email = 'tester@unverified.com';
+
+      beforeEach(async () => {
+        agent = request.agent(await createApp());
+        await loginWithEmail(agent, email, name);
+      });
+      test('Should check logged in', async () => {
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: true, userRole: UserRole.UNVERIFIED, name});
+      });
+
+      test('Should not be able to reserve spot', async () => {
+        await agent
+          .post('/api/parking-reservations')
+          .expect(403, {message: 'Verified account required.'});
+      });
+
+      test('Should fail to add new parking spots', async () => {
+        await agent
+          .post('/api/parking-spots')
+          .send({name: 'spot1'})
+          .expect(403);
+      });
     });
 
-    test('Logging in should not add new user', async () => {
-      await loginWithEmail(agent, initialUser.email);
-      expect(await fetchUsers()).toHaveLength(1);
+
+    describe('Verified user', () => {
+      const name = 'Tester';
+      const email = 'tester' + process.env.COMPANY_EMAIL;
+
+      beforeEach(async () => {
+        agent = request.agent(await createApp());
+        await loginWithEmail(agent, email, name);
+      });
+
+      test('Should check logged in', async () => {
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name});
+      });
+
+      test('Should be able to get parking spots', async () => {
+        await agent
+          .get('/api/parking-spots')
+          .expect(200);
+      });
+
+      test('Should fail to add new parking spots', async () => {
+        await agent
+          .post('/api/parking-spots')
+          .send({name: 'spot1'})
+          .expect(403);
+      });
     });
 
-    test('New email oauth login should add new user', async () => {
-      await loginWithEmail(agent, 'new@example.com');
-      expect(await fetchUsers()).toHaveLength(2);
+
+    describe('Admin user', () => {
+      beforeEach(async () => {
+        agent = await createAppWithAdminSession();
+      });
+      afterEach(async () => {
+        await User.delete({});
+      });
+
+      test('Should be able to get parking spots', async () => {
+        await agent
+          .get('/api/parking-spots')
+          .expect(200);
+      });
+
+      test('Should manage to add new parking spots', async () => {
+        await agent
+          .post('/api/parking-spots')
+          .send({name: 'spot1'})
+          .expect(201);
+      });
     });
 
-    test('Failed login should not add user', async () => {
-      await loginWithEmail(agent, 'new@example.com', 'Tester', false);
-      expect(await fetchUsers()).toHaveLength(1);
-    });
 
-    test('Logout should log out', async () => {
-      await loginWithEmail(agent, initialUser.email);
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
-      await agent
-        .get('/api/auth/logout')
-        .expect({message: 'Successfully logged out'});
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: false});
-    });
+    describe('Authentication logic', () => {
+      let initialUser: User;
 
-    test('POST Logout should log out', async () => {
-      await loginWithEmail(agent, initialUser.email);
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
-      await agent
-        .post('/api/auth/logout')
-        .expect({message: 'Successfully logged out'});
-      await agent
-        .get('/api/auth/login-state')
-        .expect({isAuthenticated: false});
+      beforeEach(async () => {
+        initialUser = User.create({
+          name: 'Test1',
+          email: 'test@example.com',
+          role: UserRole.VERIFIED
+        });
+        agent = request.agent(await createApp());
+        await initialUser.save();
+      });
+      afterEach(async () => {
+        await User.delete({});
+      });
+
+      test('Should be 1 user initially', async () => {
+        expect(await fetchUsers()).toHaveLength(1);
+      });
+
+      test('Logging in should not add new user', async () => {
+        await loginWithEmail(agent, initialUser.email);
+        expect(await fetchUsers()).toHaveLength(1);
+      });
+
+      test('New email oauth login should add new user', async () => {
+        await loginWithEmail(agent, 'new@example.com');
+        expect(await fetchUsers()).toHaveLength(2);
+      });
+
+      test('Failed login should not add user', async () => {
+        await loginWithEmail(agent, 'new@example.com', 'Tester', false);
+        expect(await fetchUsers()).toHaveLength(1);
+      });
+
+      test('Logout should log out', async () => {
+        await loginWithEmail(agent, initialUser.email);
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
+        await agent
+          .get('/api/auth/logout')
+          .expect({message: 'Successfully logged out'});
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: false});
+      });
+
+      test('POST Logout should log out', async () => {
+        await loginWithEmail(agent, initialUser.email);
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
+        await agent
+          .post('/api/auth/logout')
+          .expect({message: 'Successfully logged out'});
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: false});
+      });
     });
   });
 
-  describe('User API logic', () => {
+  describe('User API', () => {
     let verifiedUser: User;
     let unverifiedUser: User;
+    let adminUser: User;
     let ownedSpot: ParkingSpot;
 
     beforeEach(async () => {
       agent = await createAppWithAdminSession();
 
+      adminUser = (await getUser({email: TEST_USER_EMAIL}))!!;
+
       verifiedUser = await User.create({
         name: 'VerifiedTester',
-        email: 'test@example.com',
+        email: 'tester2@example.com',
         role: UserRole.VERIFIED
       }).save();
       unverifiedUser = await User.create({
         name: 'UnVerifiedTester',
-        email: 'test@unverified.com',
+        email: 'tester3@unverified.com',
         role: UserRole.UNVERIFIED
       }).save();
       ownedSpot = await ParkingSpot.create({
@@ -213,6 +218,7 @@ describe('Users/authentication (e2e)', () => {
     afterEach(async () => {
       await User.delete({});
       await ParkingSpot.delete({});
+      await DayReservation.delete({});
     });
 
     describe('GET /api/users', () => {
@@ -241,6 +247,62 @@ describe('Users/authentication (e2e)', () => {
           role: expect.any(String),
           sessions: expect.any(Array)
         })]));
+      });
+
+      test('Should include parking spots and reservation counts', async () => {
+        const spot = await ParkingSpot.create({
+          name: 'Test spot'
+        }).save();
+        await DayReservation.create({
+          user: verifiedUser,
+          spot,
+          date: '2019-11-01'
+        }).save();
+        await DayReservation.create({
+          user: verifiedUser,
+          spot,
+          date: '2019-11-02'
+        }).save();
+        await DayReservation.create({
+          user: adminUser,
+          spot,
+          date: '2019-11-03'
+        }).save();
+        const res = await agent.get('/api/users').expect(200);
+        expect(res.body.data).toEqual([
+          {
+            email: 'tester2@example.com',
+            id: verifiedUser.id,
+            name: 'VerifiedTester',
+            ownedParkingSpots: [
+              {
+                id: ownedSpot.id,
+                name: 'test spot 1'
+              }
+            ],
+            requestCount: 2,
+            role: 'verified',
+            sessions: []
+          },
+          {
+            email: 'tester3@unverified.com',
+            id: unverifiedUser.id,
+            name: 'UnVerifiedTester',
+            ownedParkingSpots: [],
+            requestCount: 0,
+            role: 'unverified',
+            sessions: []
+          },
+          {
+            email: 'tester@example.com',
+            id: adminUser.id,
+            name: 'Tester',
+            ownedParkingSpots: [],
+            requestCount: 1,
+            role: 'admin',
+            sessions: expect.any(Array)
+          },
+        ]);
       });
 
       test('Admin should have a session, others should not', async () => {
