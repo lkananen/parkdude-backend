@@ -16,7 +16,7 @@ export interface UserData {
 
 export interface FullUserData extends UserData {
   ownedParkingSpots: BasicParkingSpotData[];
-  requestCount: number;
+  reservationCount: number;
 }
 
 export interface UserSessionData extends FullUserData {

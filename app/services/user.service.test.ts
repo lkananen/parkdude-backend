@@ -25,8 +25,8 @@ describe('User service', () => {
     user1.password = undefined;
     user2.password = undefined;
     // Needed for equals to match
-    user1.requestCount = 0;
-    user2.requestCount = 0;
+    user1.reservationCount = 0;
+    user2.reservationCount = 0;
     (user1 as any).__ownedParkingSpots__ = [];
     (user2 as any).__ownedParkingSpots__ = [];
   });

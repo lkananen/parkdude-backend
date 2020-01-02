@@ -9,14 +9,14 @@ export async function fetchUsers(userRole?: UserRole): Promise<User[]> {
     relations: ['ownedParkingSpots'],
     order: {email: 'ASC'}
   });
-  const requestCounts = await getRequestCounts(users);
-  users.forEach((user) => user.requestCount = requestCounts.get(user.id)!!);
+  const reservationCounts = await getreservationCounts(users);
+  users.forEach((user) => user.reservationCount = reservationCounts.get(user.id)!!);
   return users;
 }
 
-async function getRequestCounts(users: User[]) {
+async function getreservationCounts(users: User[]) {
   const userIds = users.map((user) => user.id);
-  const requestCountsRaw = (await createQueryBuilder(User, 'user')
+  const reservationCountsRaw = (await createQueryBuilder(User, 'user')
     .leftJoin('user.reservations', 'reservation')
     .groupBy('user.id')
     .select('user.id', 'userId')
@@ -25,7 +25,7 @@ async function getRequestCounts(users: User[]) {
     .getRawMany())
     .map(({userId, reservationCount}) => [userId, +reservationCount] as [string, number]);
 
-  return new Map(requestCountsRaw);
+  return new Map(reservationCountsRaw);
 }
 
 export async function getUser({email}: UserBody): Promise <User | undefined> {
@@ -36,8 +36,8 @@ export async function fetchUser(id: string): Promise<User> {
   const user = await User.findOneOrFail(id, {
     relations: ['ownedParkingSpots']
   });
-  const requestCounts = await getRequestCounts([user]);
-  user.requestCount = requestCounts.get(user.id)!!;
+  const reservationCounts = await getreservationCounts([user]);
+  user.reservationCount = reservationCounts.get(user.id)!!;
   return user;
 }
 

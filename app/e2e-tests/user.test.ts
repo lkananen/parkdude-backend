@@ -280,7 +280,7 @@ describe('Users (e2e)', () => {
                 name: 'test spot 1'
               }
             ],
-            requestCount: 2,
+            reservationCount: 2,
             role: 'verified',
             sessions: []
           },
@@ -289,7 +289,7 @@ describe('Users (e2e)', () => {
             id: unverifiedUser.id,
             name: 'UnVerifiedTester',
             ownedParkingSpots: [],
-            requestCount: 0,
+            reservationCount: 0,
             role: 'unverified',
             sessions: []
           },
@@ -298,7 +298,7 @@ describe('Users (e2e)', () => {
             id: adminUser.id,
             name: 'Tester',
             ownedParkingSpots: [],
-            requestCount: 1,
+            reservationCount: 1,
             role: 'admin',
             sessions: expect.any(Array)
           },

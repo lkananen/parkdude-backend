@@ -50,7 +50,7 @@ export class User extends BaseEntity {
     reservations: DayReservation[]
 
     // Mapped separately
-    requestCount: number;
+    reservationCount: number;
 
     @CreateDateColumn()
     created: Date;
@@ -78,7 +78,7 @@ export class User extends BaseEntity {
         name: this.name,
         role: this.role,
         ownedParkingSpots: (await this.ownedParkingSpots).map((spot) => spot.toBasicParkingSpotData()),
-        requestCount: this.requestCount
+        reservationCount: this.reservationCount
       };
     }
 }
