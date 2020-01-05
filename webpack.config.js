@@ -34,13 +34,16 @@ module.exports = {
   },
   target: 'node',
   optimization: {
-    // TypeORM needs full names
-    minimize: false,
+  stats: {
+    warningsFilter: /^(?!CriticalDependenciesWarning$)/
   },
   plugins: [
     // Filter TypeORM
     new FilterWarningsPlugin({
-      exclude: [/mongodb/, /mssql/, /mysql/, /mysql2/, /oracledb/, /pg-query-stream/, /redis/, /sqlite3/]
+      exclude: [
+        /mongodb/, /mssql/, /mysql/, /mysql2/, /oracledb/, /pg-query-stream/,
+        /redis/, /sqlite3/, /react-native/
+      ]
     }),
     new webpack.IgnorePlugin(/^pg-native$/)
   ],
