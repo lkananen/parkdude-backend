@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import {
   GetReservationsCalendarResponse, PostReservationsBody,
-  PostReservationsResponse, GetReservationsForDateResponse, MyReservationsResponse as UserReservationsResponse,
+  PostReservationsResponse, UserReservationsResponse,
   DeleteReservationsResponse
 } from '../interfaces/parking-reservation.interfaces';
 import {
@@ -59,25 +59,6 @@ export async function getUserReservations(req: Request, res: Response) {
     releases: releases.map((release) => release.toReleaseResponse())
   };
 
-  res.status(200).json(json);
-}
-
-export async function getReservationsForDate(req: Request, res: Response) {
-  const date = req.params.date;
-  const json: GetReservationsForDateResponse = {
-    parkingSpots: [
-      {
-        id: '123-id',
-        name: '313',
-        isReservedByUser: false
-      },
-      {
-        id: '124-id',
-        name: '314',
-        isReservedByUser: true
-      }
-    ]
-  };
   res.status(200).json(json);
 }
 

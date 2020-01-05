@@ -41,7 +41,6 @@ export function createRouter(): Router {
   router.get('/parking-reservations/parking-spot/:parkingSpotId/calendar', asyncWrapper(getReservationsCalendar));
   router.delete('/parking-reservations/parking-spot/:parkingSpotId', asyncWrapper(deleteReservations));
   router.get('/parking-reservations/my-reservations', asyncWrapper(getMyReservations));
-  router.get('/parking-reservations/days/:date', asyncWrapper(getReservationsForDate));
 
   return router;
 }

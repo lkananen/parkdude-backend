@@ -79,7 +79,7 @@ export interface DayReservationStatus extends BasicParkingSpotData {
   isReservedByUser: boolean;
 }
 
-export interface MyReservationsResponse {
+export interface UserReservationsResponse {
   ownedSpots: BasicParkingSpotData[];
   reservations: ReservationResponse[];
   releases: ReleaseResponse[];
