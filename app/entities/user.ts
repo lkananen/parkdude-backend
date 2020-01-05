@@ -3,8 +3,9 @@ import {ParkingSpot} from './parking-spot';
 import {DayReservation} from './day-reservation';
 import {
   BaseEntity, Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn, OneToMany
+  CreateDateColumn, UpdateDateColumn, OneToMany, BeforeInsert, BeforeUpdate
 } from 'typeorm';
+import {Length, IsEmail, validateOrReject} from 'class-validator';
 
 export enum UserRole {
     ADMIN = 'admin',
@@ -20,6 +21,15 @@ export class User extends BaseEntity {
     @Column({
       unique: true
     })
+    @Length(1, 200, {message: ({value, constraints}) => {
+      if (!value) {
+        return 'Email is required.';
+      }
+      return `Email ${value} is too long (${value && value.length} characters). Maximum length is ${constraints[1]}.`;
+    }})
+    @IsEmail({}, {
+      message: 'Email must be valid.'
+    })
     email: string;
 
     @Column({
@@ -29,6 +39,12 @@ export class User extends BaseEntity {
     password?: string;
 
     @Column()
+    @Length(1, 200, {message: ({value, constraints}) => {
+      if (!value) {
+        return 'Name is required.';
+      }
+      return `Name ${value} is too long (${value && value.length} characters). Maximum length is ${constraints[1]}.`;
+    }})
     name: string;
 
     @Column({
@@ -62,6 +78,12 @@ export class User extends BaseEntity {
 
     get isAdmin() {
       return this.role === UserRole.ADMIN;
+    }
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    async validate() {
+      await validateOrReject(this);
     }
 
     toUserData(): UserData {
