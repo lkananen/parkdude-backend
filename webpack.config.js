@@ -6,11 +6,15 @@ const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
-  entry: './handlers/rest-api.ts',
+  entry: {
+    'rest-api/lambda': './handlers/rest-api.ts',
+    'slack-bot/lambda': './handlers/slack-bot.ts',
+    'async-slack-bot/lambda': './handlers/async-slack-bot.ts'
+  },
   output: {
-    filename: 'rest-api.js',
     path: path.resolve(__dirname, 'build/handlers'),
-    libraryTarget: 'commonjs'
+    libraryTarget: 'commonjs',
+    pathinfo: false
   },
   resolve: {
     extensions: ['.ts', '.js']
@@ -39,5 +43,8 @@ module.exports = {
       exclude: [/mongodb/, /mssql/, /mysql/, /mysql2/, /oracledb/, /pg-query-stream/, /redis/, /sqlite3/]
     }),
     new webpack.IgnorePlugin(/^pg-native$/)
-  ]
+  ],
+  externals: {
+    'aws-sdk': 'aws-sdk'
+  }
 };

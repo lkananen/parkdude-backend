@@ -1,9 +1,13 @@
 import * as axios from 'axios';
+import crypto = require('crypto');
 import {ReservationRange, ParkingSpotDayStatus} from '../interfaces/parking-reservation.interfaces';
 import {DayReservation} from '../entities/day-reservation';
 import {User} from '../entities/user';
-import {formatDateRange} from '../utils/date';
+import {formatDateRange, isValidDate, toDateString, parseDateInput, formatDate} from '../utils/date';
 import {ParkingSpot} from '../entities/parking-spot';
+import {fetchParkingSpots, fetchParkingSpotCount} from './parking-spot.service';
+import {APIGatewayProxyEvent} from 'aws-lambda';
+import {SlackAuthenticationError} from '../utils/errors';
 
 const MS_IN_DAY = 24*3600*1000;
 
@@ -117,4 +121,109 @@ function getReleaseMessage(range: ReservationRange, includeParkingSpot: boolean)
     return '- ' + formatDateRange(range.startDate, range.endDate);
   }
   return getReservationMessage(range);
+}
+
+/**
+ * Verifies that signature in request matches secret
+ */
+export function validateSlackAuth(event: APIGatewayProxyEvent) {
+  const slackSignature = event.headers['X-Slack-Signature'] as string;
+  const rawBody = event.body!!;
+  const timestamp = +event.headers['X-Slack-Request-Timestamp']!!;
+  // Slack timestamps are in seconds
+  const time = Math.floor(new Date().getTime()/1000);
+  if (Math.abs(time - timestamp) > 300) {
+    // It has been over 5 minutes since sending the message
+    // This should not happen in normal circumstances
+    throw new SlackAuthenticationError('Request has timed out.');
+  }
+
+  if (!process.env.SLACK_SIGNING_SECRET) {
+    throw new SlackAuthenticationError('Slack signing secret has not been defined. Contact application administrator.');
+  }
+  console.log('Headers', event.headers);
+  console.log('Body', event.body);
+  console.log('Event', event);
+
+  if (!isValidSlackSignature(slackSignature, timestamp, rawBody)) {
+    throw new SlackAuthenticationError(
+      'Slack signature did not match secret in configuration. Contact application administrator.'
+    );
+  }
+}
+
+/**
+ * Checks that signature received from request matches the body
+ * that is hashed with the same secret
+ */
+function isValidSlackSignature(signature: string, timestamp: number, rawBody: string) {
+  const hmac = crypto.createHmac('sha256', process.env.SLACK_SIGNING_SECRET!!);
+  const [version, hash] = signature.split('=');
+  hmac.update(`${version}:${timestamp}:${rawBody}`);
+  const generatedHash = hmac.digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(hash, 'utf8'), Buffer.from(generatedHash, 'utf8'));
+}
+
+export enum SlackCommand {
+  HELP = 'help',
+  STATUS = 'status'
+}
+
+/**
+ * Identifies Slack command and returns response for it as JSON object that
+ * can be sent to Slack API.
+ */
+export async function processSlackCommand(inputText: string) {
+  // Input text is in format "command param1 param2 param3..."
+  const [command, ...params] = inputText.split(' ');
+  if (!command) {
+    return createHelpTextResponse();
+  }
+  switch (command) {
+  case SlackCommand.HELP: return createHelpTextResponse();
+  case SlackCommand.STATUS: return await createStatusCommandResponse(...params);
+  }
+  return {
+    'response_type': 'ephemeral',
+    'text': 'Unknown command. Use `/parkdude help` to see available commands.'
+  };
+}
+
+function createHelpTextResponse() {
+  return {
+    'response_type': 'ephemeral',
+    'text': 'Commands:\n' +
+            '`/parkdude help`\n' +
+            '> Gives list of all available commands.\n\n' +
+            '`/parkdude status [date]`\n' +
+            '> Gives list of all available parking spots for a given day. Defaults to current day.' +
+            ' Date can be given in format dd.mm.yyyy or dd.mm.\n' +
+            '> Example usages:\n' +
+            '> - `/parkdude status`\n' +
+            '> - `/parkdude status 30.11.2019`\n' +
+            '> - `/parkdude status 30.11`\n'
+  };
+}
+
+/**
+ * Returns response showing all available parking spaces for given date (defaults to current date)
+ */
+async function createStatusCommandResponse(dateInput?: string) {
+  const date = parseDateInput(dateInput);
+  if (!isValidDate(date)) {
+    return {
+      'response_type': 'ephemeral',
+      'text': 'Error: Invalid date.'
+    };
+  }
+  const dateString = toDateString(date);
+  const totalParkingSpots = await fetchParkingSpotCount();
+  const parkingSpots = await fetchParkingSpots([dateString]);
+  const parkingSpotList = parkingSpots.map((spot) => '• ' + spot.name).join('\n');
+  return {
+    'response_type': 'in_channel',
+    'text': `${parkingSpots.length} / ${totalParkingSpots} parking spots are available ` +
+            `on ${formatDate(dateString)}:\n` +
+            parkingSpotList
+  };
 }

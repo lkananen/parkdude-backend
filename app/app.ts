@@ -1,8 +1,8 @@
-import * as express from 'express';
-import * as cors from 'cors';
-import * as session from 'express-session';
-import * as cookieParser from 'cookie-parser';
-import * as morgan from 'morgan';
+import express from 'express';
+import cors from 'cors';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 import {passport} from './middlewares/passport';
 import {createRouter} from './router';
 import {StatusError} from './utils/errors';

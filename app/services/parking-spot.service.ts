@@ -8,7 +8,11 @@ import {ConflictError} from '../utils/errors';
 
 export async function fetchParkingSpots(availableOnDates?: string[]): Promise<ParkingSpot[]> {
   if (!availableOnDates) {
-    return await ParkingSpot.find();
+    return await ParkingSpot.find({
+      order: {
+        name: 'ASC'
+      }
+    });
   }
 
   // Filter out spots which are not available on all the dates
@@ -31,11 +35,16 @@ export async function fetchParkingSpots(availableOnDates?: string[]): Promise<Pa
       'CASE WHEN dayReservation.id IS NULL AND (owner.id IS NULL OR dayRelease.id IS NOT NULL) THEN 0 ELSE 1 END' +
       ') = 0'
     )
+    .orderBy('spot.name')
     .getMany();
 }
 
 export async function fetchParkingspot(id: string): Promise<ParkingSpot> {
   return await ParkingSpot.findOneOrFail({id});
+}
+
+export async function fetchParkingSpotCount() {
+  return await ParkingSpot.count();
 }
 
 export async function createParkingSpot({name, ownerEmail}: ParkingSpotBody): Promise<ParkingSpot> {
