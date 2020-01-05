@@ -6,7 +6,7 @@ import {UserRole, User} from '../entities/user';
  */
 export function loginRequired(req: Request, res: Response, next: NextFunction) {
   const user = req.user as User;
-  if (user && [UserRole.VERIFIED, UserRole.ADMIN, UserRole.SLACK].includes(user.role)) {
+  if (user && [UserRole.VERIFIED, UserRole.ADMIN].includes(user.role)) {
     next();
   } else {
     const status = user ? 403 : 401;
