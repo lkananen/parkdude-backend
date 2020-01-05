@@ -1,7 +1,9 @@
 import {User, UserRole} from '../entities/user';
-import {UserBody, UserUpdateBody, UserSessions, SessionUser} from '../interfaces/user.interfaces';
+import {UserBody, UserUpdateBody, UserSessions, SessionUser, CreateUserBody} from '../interfaces/user.interfaces';
 import {Session} from '../entities/session';
 import {getConnection, createQueryBuilder} from 'typeorm';
+import bcrypt from 'bcryptjs';
+import {BadRequestError, ForbiddenError} from '../utils/errors';
 
 export async function fetchUsers(userRole?: UserRole): Promise<User[]> {
   const users = await User.find({
@@ -41,8 +43,15 @@ export async function fetchUser(id: string): Promise<User> {
   return user;
 }
 
+/**
+ * Used for Google login, in which email is always verified.
+ * Is user has not logged in before, a new user is created.
+ */
 export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
   let user = await User.findOne({email});
+  if (user && user.hasPassword) {
+    throw new ForbiddenError('User has a password. Google login is disabled.');
+  }
   if (user === undefined) {
     if (!process.env.COMPANY_EMAIL) {
       throw new Error('Company email has not been defined!');
@@ -50,7 +59,8 @@ export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
     user = await User.create({
       name: name,
       email: email,
-      role: email.endsWith(process.env.COMPANY_EMAIL) ? UserRole.VERIFIED : UserRole.UNVERIFIED
+      role: email.endsWith(process.env.COMPANY_EMAIL) ? UserRole.VERIFIED : UserRole.UNVERIFIED,
+      hasPassword: false
     }).save();
   }
   return user;
@@ -61,6 +71,16 @@ export async function updateUser(user: User, data: UserUpdateBody): Promise<User
   user.name = data.name;
   user.role = data.role;
   return await user.save();
+}
+
+export async function changePassword(user: User, password: string) {
+  if (!user.hasPassword) {
+    throw new ForbiddenError('Account created with Google login. Passwords are disabled.');
+  }
+  const hashedPassword = await hashPassword(password);
+  // eslint-disable-next-line require-atomic-updates
+  user.password = hashedPassword;
+  await user.save();
 }
 
 export async function deleteUser(user: User) {
@@ -100,4 +120,34 @@ export async function getUserSession(user: User): Promise<UserSessions> {
 export async function clearSessions(user: UserSessions) {
   const sessionRepo = getConnection().getRepository(Session);
   await sessionRepo.delete(user.sessions);
+}
+
+export async function createPasswordVerifiedUser({name, email, password}: CreateUserBody) {
+  const existingUser = await User.findOne({email});
+  if (existingUser) {
+    throw new BadRequestError('User of given email already exists.');
+  }
+  const hashedPassword = await hashPassword(password);
+  return await User.create({
+    role: UserRole.UNVERIFIED,
+    name,
+    email,
+    password: hashedPassword,
+    hasPassword: true
+  }).save();
+}
+
+async function hashPassword(password: string) {
+  validatePassword(password);
+  const salt = await bcrypt.genSalt();
+  return await bcrypt.hash(password, salt);
+}
+
+function validatePassword(password: string) {
+  if (!password) {
+    throw new BadRequestError('Password is required');
+  }
+  if (password.length < 8) {
+    throw new BadRequestError('Password must be 8 characters or longer.');
+  }
 }

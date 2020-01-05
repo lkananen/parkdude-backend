@@ -3,11 +3,12 @@ import {
   GetUsersResponse, GetUserResponse,
   UserUpdateBody, PutUpdatedUserResponse
 } from '../interfaces/user.interfaces';
-import {UserRole} from '../entities/user';
+import {UserRole, User} from '../entities/user';
 import {GenericResponse} from '../interfaces/general.interfaces';
+import {CreateUserBody, PostUserResponse, PutUserPasswordBody} from '../interfaces/user.interfaces';
 import {
   fetchUsers, fetchUser, updateUser, deleteUser,
-  clearSessions, getUserSession, getUsersSessions
+  clearSessions, getUserSession, getUsersSessions, createPasswordVerifiedUser, changePassword
 } from '../services/user.service';
 
 export async function getUsers(req: Request, res: Response) {
@@ -32,17 +33,24 @@ export async function getUser(req: Request, res: Response) {
   res.status(200).json(json);
 }
 
+export async function postUser(req: Request, res: Response) {
+  const body: CreateUserBody = req.body;
+  const user = await createPasswordVerifiedUser(body);
+  const json: PostUserResponse = {
+    message: 'User created successfully',
+    data: user.toUserData()
+  };
+  res.status(200).json(json);
+}
+
 export async function putUpdatedUser(req: Request, res: Response) {
   const userId = req.params.userId;
   const user = await fetchUser(userId);
-  let data: UserUpdateBody = req.body;
-  data = await updateUser(user, data);
+  const data: UserUpdateBody = req.body;
+  const updatedUser = await updateUser(user, data);
   const json: PutUpdatedUserResponse = {
     message: 'User successfully updated',
-    data: {
-      id: userId,
-      ...data
-    }
+    data: updatedUser.toUserData()
   };
   res.status(200).json(json);
 }
@@ -54,6 +62,17 @@ export async function deleteDeleteUser(req: Request, res: Response) {
   await deleteUser(user);
   const json: GenericResponse = {
     message: 'User successfully deleted'
+  };
+  res.status(200).json(json);
+}
+
+export async function putUserPassword(req: Request, res: Response) {
+  const user = req.params.userId ? await fetchUser(req.params.userId) : req.user as User;
+  const body: PutUserPasswordBody = req.body;
+  const password = body.password;
+  await changePassword(user, password);
+  const json: GenericResponse = {
+    message: 'Password successfully updated.'
   };
   res.status(200).json(json);
 }

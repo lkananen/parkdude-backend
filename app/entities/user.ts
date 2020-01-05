@@ -38,6 +38,9 @@ export class User extends BaseEntity {
     })
     role: UserRole;
 
+    @Column({default: false})
+    hasPassword: boolean;
+
     @OneToMany(() => ParkingSpot, (spot) => spot.owner, {
       lazy: true
     })
