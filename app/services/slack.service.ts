@@ -141,9 +141,6 @@ export function validateSlackAuth(event: APIGatewayProxyEvent) {
   if (!process.env.SLACK_SIGNING_SECRET) {
     throw new SlackAuthenticationError('Slack signing secret has not been defined. Contact application administrator.');
   }
-  console.log('Headers', event.headers);
-  console.log('Body', event.body);
-  console.log('Event', event);
 
   if (!isValidSlackSignature(slackSignature, timestamp, rawBody)) {
     throw new SlackAuthenticationError(
