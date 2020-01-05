@@ -39,7 +39,7 @@ export async function fetchParkingSpots(availableOnDates?: string[]): Promise<Pa
     .getMany();
 }
 
-export async function fetchParkingspot(id: string): Promise<ParkingSpot> {
+export async function fetchParkingSpot(id: string): Promise<ParkingSpot> {
   return await ParkingSpot.findOneOrFail({id});
 }
 
