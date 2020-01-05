@@ -5,7 +5,7 @@ const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
 const webpack = require('webpack');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   entry: {
     'rest-api/lambda': './handlers/rest-api.ts',
     'slack-bot/lambda': './handlers/slack-bot.ts',
