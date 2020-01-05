@@ -34,6 +34,16 @@ module.exports = {
   },
   target: 'node',
   optimization: {
+    minimize: true,
+    usedExports: true,
+    sideEffects: true,
+    namedModules: false,
+    namedChunks: false,
+    flagIncludedChunks: true,
+    occurrenceOrder: true,
+    concatenateModules: true,
+    checkWasmTypes: true,
+  },
   stats: {
     warningsFilter: /^(?!CriticalDependenciesWarning$)/
   },
