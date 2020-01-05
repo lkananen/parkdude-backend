@@ -136,3 +136,22 @@ Linting can be run for all files with `npm run lint`.
 ## Production deployment
 
 TODO
+
+## Slack integration
+
+ParkDude has two integrations with Slack. Slack webhooks are used to send notifications from ParkDude backend to Slack to display messages when reservations have been made or removed. Slack commands are used in Slack to get information on reservation status from backend. Setting the integration requires a small amount of manual work.
+
+1. Create new Slack application (https://api.slack.com/apps?new_app=1). Give it a name (e.g. `ParkDude`) and assign it to desired workspace.
+2. `Add features and functionality` -> `Incoming Webhooks`.
+3. Enable webhooks and add a new webhook. Assign a channel for the webhook to which the notifications will come.
+4. Copy webhook url and add it to `SLACK_WEBHOOK_URL` in environment variable file (`env/app.prod.env` for production).
+5. Return to `Basic information` -> `Add features and functionanility`. Select `Slash Commands`.
+6. Give command name (e.g. `/parkdude`), description, usage hint (e.g. `[status|help]`) and request url. Request url is in format `https://{backend-api-root}/api/slack`.
+7. Return to `Basic information`
+8. In App Credentials, copy `Signing secret` and add it to `SLACK_SIGNING_SECRET` in environment variable file (`env/app.prod.env` for production).
+9. Optional: Add app icon for the application under `Display information` section.
+10. Redeploy Lambda for changes to take effect.
+
+If there ever comes a need to reset the signing secret, it can be done in the App Credentials section. The environment variable for lambda needs to be updated accordingly.
+
+
