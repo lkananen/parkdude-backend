@@ -166,7 +166,7 @@ describe('Users (e2e)', () => {
           .get('/api/auth/login-state')
           .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
         await agent
-          .get('/api/auth/logout')
+          .post('/api/auth/logout')
           .expect({message: 'Successfully logged out'});
         await agent
           .get('/api/auth/login-state')
@@ -282,6 +282,7 @@ describe('Users (e2e)', () => {
             ],
             reservationCount: 2,
             role: 'verified',
+            isEmailValidated: true,
             sessions: []
           },
           {
@@ -291,6 +292,7 @@ describe('Users (e2e)', () => {
             ownedParkingSpots: [],
             reservationCount: 0,
             role: 'unverified',
+            isEmailValidated: true,
             sessions: []
           },
           {
@@ -300,6 +302,7 @@ describe('Users (e2e)', () => {
             ownedParkingSpots: [],
             reservationCount: 1,
             role: 'admin',
+            isEmailValidated: true,
             sessions: expect.any(Array)
           },
         ]);

@@ -18,6 +18,7 @@ export interface UserData {
   email: string;
   name: string;
   role: UserRole;
+  isEmailValidated: boolean;
 }
 
 export interface FullUserData extends UserData {

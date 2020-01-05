@@ -91,7 +91,11 @@ export class User extends BaseEntity {
         id: this.id,
         email: this.email,
         name: this.name,
-        role: this.role
+        role: this.role,
+        // Users can only login either with Google login or with password.
+        // Emails associated with password users are not validated, so there is no way
+        // to know 100 % whether user is really owner of the email.
+        isEmailValidated: !this.hasPassword
       };
     }
 
@@ -102,7 +106,8 @@ export class User extends BaseEntity {
         name: this.name,
         role: this.role,
         ownedParkingSpots: (await this.ownedParkingSpots).map((spot) => spot.toBasicParkingSpotData()),
-        reservationCount: this.reservationCount
+        reservationCount: this.reservationCount,
+        isEmailValidated: !this.hasPassword
       };
     }
 }
