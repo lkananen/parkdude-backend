@@ -5,6 +5,7 @@ import {
   getParkingSpot
 } from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
+import {User} from './entities/user';
 import {passport, passwordLogin} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {
