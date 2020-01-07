@@ -82,31 +82,12 @@ export function passwordLogin(req: Request, res: Response, next: NextFunction) {
         next(error);
         return;
       }
-      if (req.query.includeToken === 'true') {
-        // Session cookie should be added to response body for mobile.
-        // Cookie is not easily accessible until next request, so this does a
-        // quick redirect
-        // 307 = Temporary redirect, which ensures that redirect is done
-        // with POST request
-        // There probably is a better way to do this...
-        res.redirect(307, process.env.HOST + '/api/auth/login/callback');
-        return;
-      }
       const json: PasswordLoginResponse = {
         message: 'Login successful'
       };
       res.status(200).json(json);
     });
   })(req, res, next);
-}
-
-export function passwordLoginTokenCallback(req: Request, res: Response) {
-  const sessionToken = encodeURIComponent(req.cookies.sessionId);
-  const json: PasswordLoginResponse = {
-    message: 'Login successful',
-    sessionToken
-  };
-  res.json(json);
 }
 
 // Serialize user into the session cookie
