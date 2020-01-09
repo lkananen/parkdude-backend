@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import {
   fetchParkingSpots, createParkingSpot,
-  updateParkingSpot, fetchParkingspot, deleteParkingSpot
+  updateParkingSpot, fetchParkingSpot, deleteParkingSpot
 } from '../services/parking-spot.service';
 import {
   PostParkingSpotResponse, PutUpdatedParkingSpotResponse,
@@ -31,7 +31,7 @@ export async function getParkingSpots(req: Request, res: Response) {
 }
 
 export async function getParkingSpot(req: Request, res: Response) {
-  const parkingSpot = await fetchParkingspot(req.params.spotId);
+  const parkingSpot = await fetchParkingSpot(req.params.spotId);
   const json: GetParkingspotResponse = {
     data: parkingSpot.toParkingSpotData()
   };

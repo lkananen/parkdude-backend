@@ -33,3 +33,9 @@ export class ConflictError extends StatusError {
     super(message, 409);
   }
 }
+
+export class SlackAuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
