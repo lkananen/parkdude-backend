@@ -5,7 +5,7 @@ import {
 } from 'typeorm';
 
 import {ParkingSpot} from './parking-spot';
-import {ReleaseResponse} from '../interfaces/parking-reservation.interfaces';
+import {ReleaseResponse, ReservationResponse} from '../interfaces/parking-reservation.interfaces';
 import {DayReservation} from './day-reservation';
 
 
@@ -46,5 +46,10 @@ export class DayRelease extends BaseEntity {
         user: this.reservation.user.toUserData()
       }
     };
+  }
+
+  // Used when release is deleted
+  toReservationResponse(): ReservationResponse {
+    return this.toReleaseResponse();
   }
 }

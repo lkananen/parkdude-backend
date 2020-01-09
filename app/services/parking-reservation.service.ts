@@ -1,6 +1,6 @@
 import {ParkingSpot} from '../entities/parking-spot';
 import {getDateRange, toDateString} from '../utils/date';
-import {getConnection, EntityManager, Between, OrderByCondition, SaveOptions} from 'typeorm';
+import {getConnection, EntityManager, Between, OrderByCondition, SaveOptions, TransactionManager} from 'typeorm';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
 import {User} from '../entities/user';
@@ -169,7 +169,13 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
     .getMany();
 }
 
-export async function reserveSpots(dates: string[], user: User, parkingSpotId?: string): Promise<DayReservation[]> {
+/**
+ * Reserves spots and deletes own releases
+ * If parkingSpotId is not given, any spots available for dates can be used.
+ */
+export async function reserveSpots(
+  dates: string[], user: User, parkingSpotId?: string
+): Promise<(DayReservation|DayRelease)[]> {
   return await getConnection().transaction(async (transactionManager) => {
     // Get reservation/release information for each day
     // Note: slightly less safe query generation,
@@ -207,7 +213,7 @@ export async function reserveSpots(dates: string[], user: User, parkingSpotId?: 
     // Order days by most available spot
     // Note: This currently does not take overlap into account (e.g. "remaining" dates after most available spot)
     availabilityBySpot.sort(
-      ({availabilityDates: days1}, {availabilityDates: days2}) => days1.length > days2.length ? -1 : 1
+      ({dates: dates1}, {dates: dates2}) => dates1.length > dates2.length ? -1 : 1
     );
 
     const availabilityByDate = Object.entries(getAvailabilityByDate(availabilityBySpot));
@@ -216,16 +222,66 @@ export async function reserveSpots(dates: string[], user: User, parkingSpotId?: 
       throw new ReservationFailedError('No available spot.', failedDates);
     }
 
+    // If user owns the spot, its release should be removed instead of
+    // making a reservation
+    const releasesToRemoveCondition = availabilityByDate
+      .filter(([date, spotData]) => spotData[0].ownerId === user.id)
+      .map(([date, spotData]) => ({
+        ownerId: spotData[0].ownerId as string,
+        spotId: spotData[0].spotId,
+        date
+      }));
+    const removedReleases = await deleteReleases(releasesToRemoveCondition, transactionManager);
+
     // Select first spot for each, which is most available due to previous sorting
-    const reservations = availabilityByDate.map(([date, spotIds]) => DayReservation.create({
-      date,
-      spotId: spotIds[0],
-      user
-    }));
+    const reservations = availabilityByDate
+      .filter(([date, spotData]) => spotData[0].ownerId !== user.id)
+      .map(([date, spotData]) => DayReservation.create({
+        date,
+        spotId: spotData[0].spotId,
+        user
+      }));
     const reservationIds = (await transactionManager.save(reservations)).map((reservation) => reservation.id);
-    // Must be fetched again to get full information
-    return await transactionManager.getRepository(DayReservation).findByIds(reservationIds, {order: {date: 'ASC'}});
+
+    // Reservations must be fetched again to get full information
+    const reservationsAndDeletedReleases = [
+      ...await transactionManager.getRepository(DayReservation).findByIds(reservationIds),
+      ...removedReleases
+    ];
+    // Sorting done here because there are two separate queries
+    // The number of results is not expected to be large.
+    reservationsAndDeletedReleases.sort((a, b) => a.date < b.date ? -1 : 1);
+
+    return reservationsAndDeletedReleases;
   });
+}
+
+async function deleteReleases(
+  releasesToRemoveCondition: { ownerId: string; spotId: string; date: string }[], transactionManager: EntityManager
+) {
+  if (!releasesToRemoveCondition.length) {
+    return [];
+  }
+
+  let query = await transactionManager
+    .createQueryBuilder(DayRelease, 'release')
+    .innerJoinAndSelect('release.spot', 'spot');
+  let counter = 0;
+  for (const releaseCondition of releasesToRemoveCondition) {
+    // All variables must have unique names, which is why counter is required
+    query = query.orWhere(
+      `(spot.ownerId = :ownerId${counter} and spot.id = :spotId${counter} and release.date = :date${counter})`,
+      {
+        ['ownerId' + counter]: releaseCondition.ownerId,
+        ['spotId' + counter]: releaseCondition.spotId,
+        ['date' + counter]: releaseCondition.date,
+      }
+    );
+    counter++;
+  }
+  const releasesToRemove = await query.getMany();
+  await transactionManager.remove(releasesToRemove);
+  return releasesToRemove;
 }
 
 /**
@@ -235,39 +291,43 @@ export async function reserveSpots(dates: string[], user: User, parkingSpotId?: 
  */
 function getAvailabilityByParkingSpot(spotDayStatuses: ParkingSpotDayStatus[]) {
   // parkingSpotId <-> date
-  const parkingSpotMap: {[id: string]: string[]} = {};
+  const parkingSpotMap: {[id: string]: {dates: string[]; ownerId: string|null}} = {};
   // Add reservation and release dates for each spot
-  for (const {spotId, reservationId, releaseId, date: statusDate, ownerId} of spotDayStatuses) {
+  for (const spotDayStatus of spotDayStatuses) {
+    const {spotId, reservationId, releaseId, date: statusDate, ownerId} = spotDayStatus;
     if (!parkingSpotMap[spotId]) {
-      parkingSpotMap[spotId] = [];
+      parkingSpotMap[spotId] = {
+        dates: [] as string[],
+        ownerId
+      };
     }
     if (ownerId === null && reservationId === null) {
       // Is not reserved or owned
-      parkingSpotMap[spotId].push(statusDate);
+      parkingSpotMap[spotId].dates.push(statusDate);
     }
     if (ownerId !== null && reservationId === null && releaseId !== null) {
       // Owned by user, but released for the day
-      parkingSpotMap[spotId].push(statusDate);
+      parkingSpotMap[spotId].dates.push(statusDate);
     }
   }
-  return Object.entries(parkingSpotMap).map(([spotId, availabilityDates]) => ({spotId, availabilityDates}));
+  return Object.entries(parkingSpotMap).map(([spotId, {dates, ownerId}]) => ({spotId, dates, ownerId}));
 }
 
 /**
  * Returns date <-> parkingSpotId[] key-value object
  */
 function getAvailabilityByDate(
-  spotAvailabilityDates: {spotId: string; availabilityDates: string[]}[]
-): {[date: string]: string[]} {
-  const dateMap: {[date: string]: string[]} = {};
+  spotAvailabilityDates: {spotId: string; ownerId: string|null; dates: string[]}[]
+) {
+  const dateMap: {[date: string]: {spotId: string; ownerId: string|null}[]} = {};
   // Note: Because spots are ordered by number of availabilityDates,
   // dateMap has them ordered by total availability
-  for (const {spotId, availabilityDates} of spotAvailabilityDates) {
-    for (const date of availabilityDates) {
+  for (const {spotId, ownerId, dates} of spotAvailabilityDates) {
+    for (const date of dates) {
       if (!dateMap[date]) {
         dateMap[date] = [];
       }
-      dateMap[date].push(spotId);
+      dateMap[date].push({spotId, ownerId});
     }
   }
   return dateMap;
