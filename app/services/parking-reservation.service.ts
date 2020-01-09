@@ -161,8 +161,7 @@ export async function fetchReservations(startDate: string, endDate: string, user
   return await DayReservation.find({where, relations, order});
 }
 
-export async function fetchReleases(startDate: string, endDate: string, user?: User) {
-  // Note: Not tested when user is not defined
+export async function fetchReleases(startDate: string, endDate: string, user?: User, spot?: ParkingSpot) {
   return await DayRelease.createQueryBuilder('dayRelease')
     .innerJoinAndSelect('dayRelease.spot', 'spot')
     .leftJoinAndMapOne(
@@ -174,6 +173,7 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
     .leftJoinAndSelect('dayReservation.user', 'reserver')
     .where('dayRelease.date BETWEEN :startDate AND :endDate', {startDate, endDate})
     .andWhere(user ? 'spot.ownerId = :userId' : ALWAYS_TRUE, {userId: user ? user.id : undefined})
+    .andWhere(spot ? 'spot.id = :spotId' : ALWAYS_TRUE, {spotId: spot && spot.id})
     .orderBy('dayRelease.date', 'ASC')
     .getMany();
 }

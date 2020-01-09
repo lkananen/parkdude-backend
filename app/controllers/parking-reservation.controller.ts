@@ -14,6 +14,7 @@ import {validateDateRange, toDateString, isValidDateString} from '../utils/date'
 import {BadRequestError, ForbiddenError, ReservationFailedError, ReleaseFailedError} from '../utils/errors';
 import {fetchUser} from '../services/user.service';
 import {DeleteReservationsFailureResponse} from '../interfaces/parking-reservation.interfaces';
+import {fetchParkingSpot} from '../services/parking-spot.service';
 
 // Some limitation to the size of the requests
 const MAX_DATE_RANGE = 500;
@@ -69,6 +70,20 @@ export async function getReservations(req: Request, res: Response) {
   const {startDate = toDateString(new Date()), endDate = toDateString(new Date(9999, 12))} = req.query;
   const reservations = await fetchReservations(startDate, endDate);
   const releases = await fetchReleases(startDate, endDate);
+  const json: ReservationsResponse = {
+    reservations: reservations.map((reservation) => reservation.toFullReservationResponse()),
+    releases: releases.map((release) => release.toReleaseResponse())
+  };
+
+  res.status(200).json(json);
+}
+
+export async function getReservationsForSpot(req: Request, res: Response) {
+  // Default: get "all" future reservations
+  const {startDate = toDateString(new Date()), endDate = toDateString(new Date(9999, 12))} = req.query;
+  const spot = await fetchParkingSpot(req.params.spotId);
+  const reservations = await fetchReservations(startDate, endDate, undefined, spot);
+  const releases = await fetchReleases(startDate, endDate, undefined, spot);
   const json: ReservationsResponse = {
     reservations: reservations.map((reservation) => reservation.toFullReservationResponse()),
     releases: releases.map((release) => release.toReleaseResponse())
