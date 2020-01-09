@@ -1,5 +1,6 @@
-import {UserData} from '../interfaces/user.interfaces';
+import {UserData, FullUserData} from '../interfaces/user.interfaces';
 import {ParkingSpot} from './parking-spot';
+import {DayReservation} from './day-reservation';
 import {
   BaseEntity, Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn, OneToMany
@@ -43,6 +44,14 @@ export class User extends BaseEntity {
     })
     ownedParkingSpots: Promise<ParkingSpot[]>
 
+    @OneToMany(() => DayReservation, (dayReservation) => dayReservation.user, {
+      lazy: true
+    })
+    reservations: DayReservation[]
+
+    // Mapped separately
+    reservationCount: number;
+
     @CreateDateColumn()
     created: Date;
 
@@ -59,6 +68,17 @@ export class User extends BaseEntity {
         email: this.email,
         name: this.name,
         role: this.role
+      };
+    }
+
+    async toFullUserData(): Promise<FullUserData> {
+      return {
+        id: this.id,
+        email: this.email,
+        name: this.name,
+        role: this.role,
+        ownedParkingSpots: (await this.ownedParkingSpots).map((spot) => spot.toBasicParkingSpotData()),
+        reservationCount: this.reservationCount
       };
     }
 }

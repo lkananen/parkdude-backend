@@ -1,13 +1,31 @@
 import {User, UserRole} from '../entities/user';
 import {UserBody, UserUpdateBody, UserSessions, SessionUser} from '../interfaces/user.interfaces';
 import {Session} from '../entities/session';
-import {getConnection} from 'typeorm';
+import {getConnection, createQueryBuilder} from 'typeorm';
 
 export async function fetchUsers(userRole?: UserRole): Promise<User[]> {
-  if (!userRole) {
-    return await User.find();
-  }
-  return await User.find({where: {role: userRole}});
+  const users = await User.find({
+    where: userRole ? {role: userRole} : {},
+    relations: ['ownedParkingSpots'],
+    order: {email: 'ASC'}
+  });
+  const reservationCounts = await getreservationCounts(users);
+  users.forEach((user) => user.reservationCount = reservationCounts.get(user.id)!!);
+  return users;
+}
+
+async function getreservationCounts(users: User[]) {
+  const userIds = users.map((user) => user.id);
+  const reservationCountsRaw = (await createQueryBuilder(User, 'user')
+    .leftJoin('user.reservations', 'reservation')
+    .groupBy('user.id')
+    .select('user.id', 'userId')
+    .addSelect('COUNT(reservation.id)', 'reservationCount')
+    .whereInIds(userIds)
+    .getRawMany())
+    .map(({userId, reservationCount}) => [userId, +reservationCount] as [string, number]);
+
+  return new Map(reservationCountsRaw);
 }
 
 export async function getUser({email}: UserBody): Promise <User | undefined> {
@@ -15,7 +33,12 @@ export async function getUser({email}: UserBody): Promise <User | undefined> {
 }
 
 export async function fetchUser(id: string): Promise<User> {
-  return await User.findOneOrFail(id);
+  const user = await User.findOneOrFail(id, {
+    relations: ['ownedParkingSpots']
+  });
+  const reservationCounts = await getreservationCounts([user]);
+  user.reservationCount = reservationCounts.get(user.id)!!;
+  return user;
 }
 
 export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
@@ -66,6 +89,7 @@ export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
       sessIdx++;
     }
   }
+  userSessions.sort((a, b) => a.email < b.email ? -1 : 1);
   return userSessions;
 }
 
