@@ -194,7 +194,7 @@ function createHelpTextResponse() {
             '> Gives list of all available commands.\n\n' +
             '`/parkdude status [date]`\n' +
             '> Gives list of all available parking spots for a given day. Defaults to current day.' +
-            ' Date can be given in format dd.mm.yyyy or dd.mm.\n' +
+            ' Date can be given in format `dd.mm.yyyy` or `dd.mm`.\n' +
             '> Example usages:\n' +
             '> - `/parkdude status`\n' +
             '> - `/parkdude status 30.11.2019`\n' +
