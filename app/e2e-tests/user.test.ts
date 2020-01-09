@@ -507,6 +507,7 @@ describe('Users (e2e)', () => {
         expect(passwordUser.password).toEqual(originalHashedPassword);
       });
     });
+
     describe('PUT /users/my-user/password', () => {
       let app: any;
       let passwordUser: User;
@@ -515,7 +516,8 @@ describe('Users (e2e)', () => {
       const newPass = 'strongEnough';
       beforeEach(async () => {
         app = await createApp();
-        passwordUser = await createPasswordVerifiedUser({name: 'Password user',
+        passwordUser = await createPasswordVerifiedUser({
+          name: 'Password user',
           email: 'password@user.com',
           password
         });
@@ -532,26 +534,66 @@ describe('Users (e2e)', () => {
         const agent = request.agent(app);
         await agent
           .post('/api/auth/login')
-          .send({email: passwordUser.email,
-            password: password})
+          .send({
+            email: passwordUser.email,
+            password: password
+          })
           .expect(200);
         await agent
           .put('/api/users/my-user/password')
-          .send({password: newPass})
+          .send({password: newPass, oldPassword: password})
           .expect(200);
       });
 
-      test('Should fail for self if oauth user', async () => {
-        disableErrorLogs();
-        const agent = request.agent(app);
-        await loginWithEmail(agent, oAuthUser.email);
-        await agent
-          .put('/api/users/my-user/password')
-          .send({password: newPass})
-          .expect(403);
-        await oAuthUser.reload();
-        expect(oAuthUser.password).toBeNull();
-        enableErrorLogs();
+      describe('Error handling', () => {
+        beforeAll(() => {
+          disableErrorLogs();
+        });
+
+        afterAll(() => {
+          enableErrorLogs();
+        });
+
+        test('Should fail for self if oauth user', async () => {
+          const agent = request.agent(app);
+          await loginWithEmail(agent, oAuthUser.email);
+          await agent
+            .put('/api/users/my-user/password')
+            .send({password: newPass, oldPassword: password})
+            .expect(403);
+          await oAuthUser.reload();
+          expect(oAuthUser.password).toBeNull();
+        });
+
+        test('Should fail if oldPassword is missing', async () => {
+          const agent = request.agent(app);
+          await agent
+            .post('/api/auth/login')
+            .send({
+              email: passwordUser.email,
+              password: password
+            })
+            .expect(200);
+          await agent
+            .put('/api/users/my-user/password')
+            .send({password: newPass})
+            .expect(400, {message: 'Old password is required.'});
+        });
+
+        test('Should fail if oldPassword is wrong', async () => {
+          const agent = request.agent(app);
+          await agent
+            .post('/api/auth/login')
+            .send({
+              email: passwordUser.email,
+              password: password
+            })
+            .expect(200);
+          await agent
+            .put('/api/users/my-user/password')
+            .send({password: newPass, oldPassword: 'wrong-password'})
+            .expect(400, {message: 'Old password is wrong. Try again.'});
+        });
       });
     });
 

@@ -2,11 +2,10 @@ import passport = require('passport');
 import {OAuth2Strategy as GoogleStrategy} from 'passport-google-oauth';
 import {Strategy as LocalStrategy} from 'passport-local';
 import {User} from '../entities/user';
-import {getOrCreateUser} from '../services/user.service';
+import {getOrCreateUser, passwordsMatch} from '../services/user.service';
 import {Profile} from 'passport-google-oauth';
 import {createQueryBuilder} from 'typeorm';
 import {UnauthorizedError} from '../utils/errors';
-import bcrypt from 'bcryptjs';
 import {Request, Response, NextFunction} from 'express';
 import {PasswordLoginResponse} from '../interfaces/user.interfaces';
 export {passport};
@@ -51,8 +50,7 @@ async function passwordLoginCallback(email: string, password: string, done: (err
     done(new UnauthorizedError('Wrong username or password.'), null);
     return;
   }
-  const passwordsMatch = await bcrypt.compare(password, user.password);
-  if (!passwordsMatch) {
+  if (!await passwordsMatch(password, user.password)) {
     done(new UnauthorizedError('Wrong username or password.'), null);
     return;
   }

@@ -137,6 +137,15 @@ export async function createPasswordVerifiedUser({name, email, password}: Create
   }).save();
 }
 
+export async function getPassword(user: User) {
+  const {password} = await User.findOneOrFail(user.id, {select: ['password']});
+  return password;
+}
+
+export async function passwordsMatch(password: string, hashedPassword: string) {
+  return await bcrypt.compare(password, hashedPassword);
+}
+
 async function hashPassword(password: string) {
   validatePassword(password);
   const salt = await bcrypt.genSalt();

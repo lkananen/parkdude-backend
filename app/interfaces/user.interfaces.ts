@@ -56,6 +56,7 @@ export interface PutUpdatedUserResponse {
 
 export interface PutUserPasswordBody {
   password: string;
+  oldPassword?: string;
 }
 
 export interface PasswordLoginResponse {

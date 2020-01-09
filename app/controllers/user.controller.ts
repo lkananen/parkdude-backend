@@ -6,9 +6,11 @@ import {
 import {UserRole, User} from '../entities/user';
 import {GenericResponse} from '../interfaces/general.interfaces';
 import {CreateUserBody, PostUserResponse, PutUserPasswordBody} from '../interfaces/user.interfaces';
+import {BadRequestError, ForbiddenError} from '../utils/errors';
 import {
   fetchUsers, fetchUser, updateUser, deleteUser,
-  clearSessions, getUserSession, getUsersSessions, createPasswordVerifiedUser, changePassword
+  clearSessions, getUserSession, getUsersSessions,
+  createPasswordVerifiedUser, changePassword, getPassword, passwordsMatch
 } from '../services/user.service';
 
 export async function getUsers(req: Request, res: Response) {
@@ -64,6 +66,24 @@ export async function deleteDeleteUser(req: Request, res: Response) {
     message: 'User successfully deleted'
   };
   res.status(200).json(json);
+}
+
+
+export async function putMyUserPassword(req: Request, res: Response) {
+  const body: PutUserPasswordBody = req.body;
+  const user = req.user as User;
+  if (!body.oldPassword) {
+    throw new BadRequestError('Old password is required.');
+  }
+  if (!user.hasPassword) {
+    throw new ForbiddenError('Account created with Google login. Passwords are disabled.');
+  }
+  const oldPasswordHash = await getPassword(user);
+  if (!await passwordsMatch(body.oldPassword, oldPasswordHash!!)) {
+    throw new BadRequestError('Old password is wrong. Try again.');
+  }
+
+  await putUserPassword(req, res);
 }
 
 export async function putUserPassword(req: Request, res: Response) {
