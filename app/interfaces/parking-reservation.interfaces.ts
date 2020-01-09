@@ -1,4 +1,5 @@
 import {BasicParkingSpotData} from './parking-spot.interfaces';
+import {UserData} from './user.interfaces';
 
 export interface GetReservationsCalendarResponse {
   calendar: CalendarEntry[];
@@ -65,6 +66,9 @@ export interface ReservationResponse {
 export interface ReleaseResponse {
   date: string;
   parkingSpot: BasicParkingSpotData;
+  reservation?: {
+    user: UserData;
+  };
 }
 
 export interface GetReservationsForDateResponse {

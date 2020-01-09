@@ -607,21 +607,56 @@ describe('Parking reservations (e2e)', () => {
         spot: parkingSpots[2],
         date: '2019-11-02'
       }).save();
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-04'
+      }).save();
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-05'
+      }).save();
 
       await DayRelease.create({
         spot: parkingSpots[1],
         date: '2019-11-03'
       }).save();
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-11-04'
+      }).save();
+      await DayRelease.create({
+        spot: parkingSpots[0],
+        date: '2019-11-05'
+      }).save();
 
-      await agent.get('/api/parking-reservations/my-reservations?startDate=2019-11-02&endDate=2019-11-03')
+      await agent.get('/api/parking-reservations/my-reservations?startDate=2019-11-02&endDate=2019-11-05')
         .expect(200, {
           reservations: [{
             date: '2019-11-02',
             parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-04',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-05',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
           }],
           releases: [{
             date: '2019-11-03',
-            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+            reservation: null
+          }, {
+            date: '2019-11-04',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+            reservation: {
+              user: user.toUserData()
+            }
+          }, {
+            date: '2019-11-05',
+            parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+            reservation: null
           }],
           ownedSpots: [
             parkingSpots[0].toBasicParkingSpotData(),
@@ -1508,7 +1543,8 @@ describe('Parking reservations (e2e)', () => {
             reservations: [],
             releases: [{
               date: '2019-11-01',
-              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
             }],
             ownedSpots: [
               parkingSpots[1].toBasicParkingSpotData()
@@ -1550,7 +1586,8 @@ describe('Parking reservations (e2e)', () => {
             reservations: [],
             releases: [{
               date: '2019-11-01',
-              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
             }],
             ownedSpots: [
               parkingSpots[1].toBasicParkingSpotData()

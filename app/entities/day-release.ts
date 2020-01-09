@@ -6,6 +6,7 @@ import {
 
 import {ParkingSpot} from './parking-spot';
 import {ReleaseResponse, ReservationResponse} from '../interfaces/parking-reservation.interfaces';
+import {DayReservation} from './day-reservation';
 
 
 @Entity()
@@ -24,6 +25,9 @@ export class DayRelease extends BaseEntity {
   @Column({type: 'date'})
   date: string;
 
+  // Is mapped with query builder
+  reservation?: DayReservation;
+
   @CreateDateColumn()
   created: Date;
 
@@ -37,7 +41,10 @@ export class DayRelease extends BaseEntity {
     const {date, spot} = this;
     return {
       date,
-      parkingSpot: spot.toBasicParkingSpotData()
+      parkingSpot: spot.toBasicParkingSpotData(),
+      reservation: this.reservation && {
+        user: this.reservation.user.toUserData()
+      }
     };
   }
 

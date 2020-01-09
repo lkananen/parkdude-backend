@@ -156,6 +156,13 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
   // Note: Not tested when user is not defined
   return await DayRelease.createQueryBuilder('dayRelease')
     .innerJoinAndSelect('dayRelease.spot', 'spot')
+    .leftJoinAndMapOne(
+      'dayRelease.reservation',
+      DayReservation,
+      'dayReservation',
+      '(dayReservation.spotId = spot.id AND dayReservation.date = dayRelease.date)'
+    )
+    .leftJoinAndSelect('dayReservation.user', 'reserver')
     .where('dayRelease.date BETWEEN :startDate AND :endDate', {startDate, endDate})
     .andWhere(user ? 'spot.ownerId = :userId' : ALWAYS_TRUE, {userId: user ? user.id : undefined})
     .orderBy('dayRelease.date', 'ASC')
