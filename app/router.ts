@@ -10,7 +10,8 @@ import {passport} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {getUsers, getUser, putUpdatedUser, deleteDeleteUser, postClearSessions} from './controllers/user.controller';
 import {
-  getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations, deleteReservations
+  getReservationsCalendar, postReservations, getReservationsForDate,
+  getMyReservations, deleteReservations, getUserReservations
 } from './controllers/parking-reservation.controller';
 
 export function createRouter(): Router {
@@ -33,6 +34,7 @@ export function createRouter(): Router {
   router.put('/users/:userId', adminRoleRequired, asyncWrapper(putUpdatedUser));
   router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteDeleteUser));
   router.post('/users/:userId/clearSessions', adminRoleRequired, asyncWrapper(postClearSessions));
+  router.get('/users/:userId/reservations', adminRoleRequired, asyncWrapper(getUserReservations));
 
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
