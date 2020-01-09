@@ -1,3 +1,5 @@
+import * as slackService from '../services/slack.service';
+
 import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
 import {closeConnection} from '../test-utils/teardown';
@@ -13,13 +15,14 @@ describe('Parking reservations (e2e)', () => {
   let parkingSpots: ParkingSpot[];
   let user: User;
   let user2: User;
+  const slackMessageSpy = jest.spyOn(slackService, 'sendSlackMessage');
 
   beforeEach(async () => {
     agent = await createAppWithNormalSession();
     parkingSpots = await Promise.all([
+      ParkingSpot.create({name: 'test space 0'}).save(),
       ParkingSpot.create({name: 'test space 1'}).save(),
-      ParkingSpot.create({name: 'test space 2'}).save(),
-      ParkingSpot.create({name: 'test space 3'}).save()
+      ParkingSpot.create({name: 'test space 2'}).save()
     ]);
     user = await User.findOneOrFail({email: TEST_USER_EMAIL});
     user2 = await User.create({
@@ -27,6 +30,7 @@ describe('Parking reservations (e2e)', () => {
       email: 'tester2@example.com',
       role: UserRole.VERIFIED}
     ).save();
+    slackMessageSpy.mockClear();
   });
 
   afterEach(async () => {
@@ -800,6 +804,12 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve specific spot for user for multiple days', async () => {
@@ -837,6 +847,12 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve from different spots if same is not available (spot not specified)', async () => {
@@ -878,6 +894,27 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019 - 02.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019\n' +
+            '- Parking spot test space 1: 03.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 02.11.2019 - 03.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 01.11.2019\n' +
+            '- Parking spot test space 1: 02.11.2019\n' +
+            '- Parking spot test space 0: 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve same spot if available when spot is not specified', async () => {
@@ -913,6 +950,20 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 03.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve spots in order of availability', async () => {
@@ -968,6 +1019,32 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019 - 03.11.2019\n' +
+            '- Parking spot test space 0: 05.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019\n' +
+            '- Parking spot test space 1: 04.11.2019\n' +
+            '- Parking spot test space 1: 07.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 04.11.2019\n' +
+            '- Parking spot test space 2: 06.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 01.11.2019 - 03.11.2019\n' +
+            '- Parking spot test space 0: 04.11.2019\n' +
+            '- Parking spot test space 2: 05.11.2019\n' +
+            '- Parking spot test space 1: 06.11.2019\n' +
+            '- Parking spot test space 2: 07.11.2019'
+          ],
+        ]);
       });
 
       test('Should reserve spot that is reserved for another day', async () => {
@@ -1024,6 +1101,12 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should not be able to reserve owned spot released on different day', async () => {
@@ -1079,6 +1162,12 @@ describe('Parking reservations (e2e)', () => {
             errorDates: ['2019-11-01'],
             message: 'Reservation failed. There weren\'t available spots for some of the days.'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should be able to reserve released owned spots and non-owned spots', async () => {
@@ -1120,6 +1209,17 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 01.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019\n' +
+            '- Parking spot test space 2: 02.11.2019'
+          ]
+        ]);
       });
     });
 
@@ -1436,6 +1536,16 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should not remove reservations from other days', async () => {
@@ -1469,6 +1579,17 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019\n' +
+            '- 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should not remove reservations from other users', async () => {
@@ -1497,7 +1618,6 @@ describe('Parking reservations (e2e)', () => {
             ownedSpots: []
           });
       });
-
 
       test('Should remove reservations from other users with admin role', async () => {
         await DayReservation.create({
@@ -1550,6 +1670,59 @@ describe('Parking reservations (e2e)', () => {
               parkingSpots[1].toBasicParkingSpotData()
             ]
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ]
+        ]);
+      });
+
+      test('Should release multiple owned spots', async () => {
+        parkingSpots[1].owner = user;
+        await parkingSpots[1].save();
+        await agent.delete(
+          `/api/parking-reservations/parking-spot/${parkingSpots[1].id}?` +
+          'dates=2019-11-05,2019-11-01,2019-11-02,2019-11-03,2019-11-30'
+        )
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-05',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-30',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }],
+            ownedSpots: [
+              parkingSpots[1].toBasicParkingSpotData()
+            ]
+          });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019 - 03.11.2019\n' +
+            '- 05.11.2019\n' +
+            '- 30.11.2019'
+          ]
+        ]);
       });
 
       test('Should not release another user\'s owned spots', async () => {
@@ -1642,6 +1815,20 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ]
+        ]);
       });
     });
 

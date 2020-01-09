@@ -8,6 +8,7 @@ import {
   CalendarEntry, Calendar, ParkingSpotDayStatus, QueriedParkingSpotDayStatus
 } from '../interfaces/parking-reservation.interfaces';
 import {ReservationFailedError, ReleaseFailedError} from '../utils/errors';
+import {sendReservationSlackNotification, sendReleaseSlackNotification} from './slack.service';
 
 // Always true if condition to simplify conditional where queries
 const ALWAYS_TRUE = '1=1';
@@ -251,6 +252,7 @@ export async function reserveSpots(
     // Sorting done here because there are two separate queries
     // The number of results is not expected to be large.
     reservationsAndDeletedReleases.sort((a, b) => a.date < b.date ? -1 : 1);
+    await sendReservationSlackNotification(reservationsAndDeletedReleases, user).catch(() => {});
 
     return reservationsAndDeletedReleases;
   });
@@ -335,7 +337,7 @@ function getAvailabilityByDate(
 
 export async function releaseSpots(dates: string[], user: User, parkingSpotId: string) {
   return await getConnection().transaction(async (transactionManager) => {
-    await transactionManager.getRepository(ParkingSpot).findOneOrFail(parkingSpotId);
+    const spot = await transactionManager.getRepository(ParkingSpot).findOneOrFail(parkingSpotId);
     const spotStatuses: ParkingSpotDayStatus[] = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
       .leftJoin(`(values (date '${dates.join('\'),(date \'')}'))`, 'spotDate', '1=1')
       .leftJoin(
@@ -378,6 +380,9 @@ export async function releaseSpots(dates: string[], user: User, parkingSpotId: s
     if (releasesToAdd.length) {
       await transactionManager.save(releasesToAdd);
     }
+
+    // Fail silently to not show user the error message
+    await sendReleaseSlackNotification(spotStatuses, spot).catch(() => {});
   });
 }
 
