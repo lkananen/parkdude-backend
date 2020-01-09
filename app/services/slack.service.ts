@@ -4,6 +4,7 @@ import {DayReservation} from '../entities/day-reservation';
 import {User} from '../entities/user';
 import {formatDateRange} from '../utils/date';
 import {ParkingSpot} from '../entities/parking-spot';
+import {DayRelease} from '../entities/day-release';
 
 const MS_IN_DAY = 24*3600*1000;
 
@@ -28,8 +29,11 @@ export const sendSlackMessage = async function sendSlackMessage(message: string)
     });
 };
 
-export async function sendReservationSlackNotification(reservations: DayReservation[], reserver: User) {
-  const reservationRanges = getReservationRanges(reservations);
+export async function sendReservationSlackNotification(
+  reservationsAndDeletedReleases: (DayReservation|DayRelease)[],
+  reserver: User
+) {
+  const reservationRanges = getReservationRanges(reservationsAndDeletedReleases);
   const reservationMessages = reservationRanges.map(getReservationMessage).join('\n');
   const message = `Reservations made by ${reserver.name}:\n${reservationMessages}`;
   await sendSlackMessage(message);
@@ -44,7 +48,8 @@ export async function sendReleaseSlackNotification(releases: ParkingSpotDayStatu
   await sendSlackMessage(message);
 }
 
-function getReservationRanges(reservations: DayReservation[]) {
+// Note: DayReleases in this case are deleted releases
+function getReservationRanges(reservations: (DayReservation|DayRelease)[]) {
   if (reservations.length === 0) {
     return [];
   }
