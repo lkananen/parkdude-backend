@@ -47,11 +47,11 @@ async function passwordLoginCallback(email: string, password: string, done: (err
     .where('user.email = :email', {email})
     .getOne();
   if (!user || !user.password) {
-    done(new UnauthorizedError('Wrong username or password.'), null);
+    done(new UnauthorizedError('Wrong email or password.'), null);
     return;
   }
   if (!await passwordsMatch(password, user.password)) {
-    done(new UnauthorizedError('Wrong username or password.'), null);
+    done(new UnauthorizedError('Wrong email or password.'), null);
     return;
   }
   done(null, user);
