@@ -10,6 +10,12 @@ export class BadRequestError extends StatusError {
   }
 }
 
+export class UnauthorizedError extends StatusError {
+  constructor(message = 'Permission denied.') {
+    super(message, 401);
+  }
+}
+
 export class ForbiddenError extends StatusError {
   constructor(message = 'Permission denied.') {
     super(message, 403);

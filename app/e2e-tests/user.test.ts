@@ -3,11 +3,12 @@ import {createApp} from '../app';
 import {closeConnection} from '../test-utils/teardown';
 import {User, UserRole} from '../entities/user';
 import {loginWithEmail, createAppWithAdminSession, TEST_USER_EMAIL} from '../test-utils/test-login';
-import {fetchUsers, getUser} from '../services/user.service';
+import {fetchUsers, getUser, createPasswordVerifiedUser} from '../services/user.service';
 import {ParkingSpot} from '../entities/parking-spot';
 import {fetchParkingSpots} from '../services/parking-spot.service';
 import {UserSessionData} from '../interfaces/user.interfaces';
 import {DayReservation} from '../entities/day-reservation';
+import {disableErrorLogs, enableErrorLogs} from '../test-utils/logger';
 
 describe('Users (e2e)', () => {
   let agent: request.SuperTest<request.Test>;
@@ -126,58 +127,110 @@ describe('Users (e2e)', () => {
 
 
     describe('Authentication logic', () => {
-      let initialUser: User;
+      let oAuthUser: User;
+      let passwordUser: User;
+      const password = 'verystrongpassword1';
 
       beforeEach(async () => {
-        initialUser = User.create({
+        oAuthUser = User.create({
           name: 'Test1',
           email: 'test@example.com',
           role: UserRole.VERIFIED
         });
         agent = request.agent(await createApp());
-        await initialUser.save();
+        await oAuthUser.save();
+        passwordUser = await createPasswordVerifiedUser({name: 'Password user',
+          email: 'password@user.com',
+          password
+        });
+        passwordUser.role = UserRole.VERIFIED;
+        await passwordUser.save();
       });
       afterEach(async () => {
         await User.delete({});
       });
 
-      test('Should be 1 user initially', async () => {
-        expect(await fetchUsers()).toHaveLength(1);
+      beforeAll(() => {
+        disableErrorLogs();
+      });
+
+      afterAll(() => {
+        enableErrorLogs();
+      });
+
+      test('Should be 2 users initially', async () => {
+        expect(await fetchUsers()).toHaveLength(2);
       });
 
       test('Logging in should not add new user', async () => {
-        await loginWithEmail(agent, initialUser.email);
-        expect(await fetchUsers()).toHaveLength(1);
+        await loginWithEmail(agent, oAuthUser.email);
+        expect(await fetchUsers()).toHaveLength(2);
       });
 
       test('New email oauth login should add new user', async () => {
         await loginWithEmail(agent, 'new@example.com');
-        expect(await fetchUsers()).toHaveLength(2);
+        expect(await fetchUsers()).toHaveLength(3);
       });
 
       test('Failed login should not add user', async () => {
         await loginWithEmail(agent, 'new@example.com', 'Tester', false);
-        expect(await fetchUsers()).toHaveLength(1);
+        expect(await fetchUsers()).toHaveLength(2);
       });
 
-      test('Logout should log out', async () => {
-        await loginWithEmail(agent, initialUser.email);
+      test('Login should succeed for password user', async () => {
+        await agent
+          .post('/api/auth/login')
+          .send({email: passwordUser.email,
+            password})
+          .expect(200);
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
+          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: passwordUser.name});
+      });
+
+
+      test('Login should fail with wrong password ', async () => {
         await agent
-          .get('/api/auth/logout')
-          .expect({message: 'Successfully logged out'});
+          .post('/api/auth/login')
+          .send({email: passwordUser.email,
+            password: 'wrongPassword'})
+          .expect(401);
+        await agent
+          .get('/api/auth/login-state')
+          .expect({isAuthenticated: false});
+      });
+
+      test('Password login should fail for oauth user', async () => {
+        await agent
+          .post('/api/auth/login')
+          .send({email: oAuthUser.email,
+            password: ''})
+          .expect(400);
+        await agent
+          .post('/api/auth/login')
+          .send({email: oAuthUser.email,
+            password: null})
+          .expect(400);
+        await agent
+          .post('/api/auth/login')
+          .send({email: oAuthUser.email,
+          })
+          .expect(400);
+        await agent
+          .post('/api/auth/login')
+          .send({email: oAuthUser.email,
+            password: passwordUser.password})
+          .expect(401);
         await agent
           .get('/api/auth/login-state')
           .expect({isAuthenticated: false});
       });
 
       test('POST Logout should log out', async () => {
-        await loginWithEmail(agent, initialUser.email);
+        await loginWithEmail(agent, oAuthUser.email);
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: initialUser.name});
+          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: oAuthUser.name});
         await agent
           .post('/api/auth/logout')
           .expect({message: 'Successfully logged out'});
@@ -282,6 +335,7 @@ describe('Users (e2e)', () => {
             ],
             reservationCount: 2,
             role: 'verified',
+            isEmailValidated: true,
             sessions: []
           },
           {
@@ -291,6 +345,7 @@ describe('Users (e2e)', () => {
             ownedParkingSpots: [],
             reservationCount: 0,
             role: 'unverified',
+            isEmailValidated: true,
             sessions: []
           },
           {
@@ -300,6 +355,7 @@ describe('Users (e2e)', () => {
             ownedParkingSpots: [],
             reservationCount: 1,
             role: 'admin',
+            isEmailValidated: true,
             sessions: expect.any(Array)
           },
         ]);
@@ -398,6 +454,171 @@ describe('Users (e2e)', () => {
           .get('/api/users/' + regularUser.id)
           .expect(200);
         expect(res.body.data.sessions).toHaveLength(0);
+      });
+    });
+
+    describe('PUT /users/<userId>/password', () => {
+      const validPassword = 'longEnough';
+      const invalidPassword = 'short';
+      let passwordUser: User;
+
+      beforeEach(async () => {
+        passwordUser = await createPasswordVerifiedUser({name: 'Password user',
+          email: 'password@user.com',
+          password: 'verystrongpassword1'
+        });
+      });
+
+      beforeAll(() => {
+        disableErrorLogs();
+      });
+
+      afterAll(() => {
+        enableErrorLogs();
+      });
+
+      test('Should fail for oauth user', async () => {
+        await agent
+          .put('/api/users/' + verifiedUser.id + '/password')
+          .send({password: validPassword})
+          .expect(403);
+      });
+
+      test('Should succeed for password user', async () => {
+        const originalHashedPassword = passwordUser.password;
+        await agent
+          .put('/api/users/' + passwordUser.id + '/password')
+          .send({password: validPassword})
+          .expect(200);
+        // eslint-disable-next-line require-atomic-updates
+        passwordUser = await User.findOneOrFail({where: {id: passwordUser.id}, select: ['password']});
+        expect(passwordUser.password).not.toBe(originalHashedPassword);
+        // "Verify" that it's not saved as plaintext
+        expect(passwordUser.password).not.toBe(validPassword);
+      });
+
+      test('Should fail with bad password', async () => {
+        const originalHashedPassword = passwordUser.password;
+        await agent
+          .put('/api/users/' + passwordUser.id + '/password')
+          .send({password: invalidPassword})
+          .expect(400);
+        await passwordUser.reload();
+        expect(passwordUser.password).toEqual(originalHashedPassword);
+      });
+    });
+
+    describe('PUT /users/my-user/password', () => {
+      let app: any;
+      let passwordUser: User;
+      let oAuthUser: User;
+      const password = 'verystrongpassword1';
+      const newPass = 'strongEnough';
+      beforeEach(async () => {
+        app = await createApp();
+        passwordUser = await createPasswordVerifiedUser({
+          name: 'Password user',
+          email: 'password@user.com',
+          password
+        });
+        passwordUser.role = UserRole.VERIFIED;
+        await passwordUser.save();
+        oAuthUser = await User.create({
+          name: 'Regular',
+          email: 'oauth@user.com',
+          role: UserRole.VERIFIED
+        }).save();
+      });
+
+      test('Should succeed for self if password user', async () => {
+        const agent = request.agent(app);
+        await agent
+          .post('/api/auth/login')
+          .send({
+            email: passwordUser.email,
+            password: password
+          })
+          .expect(200);
+        await agent
+          .put('/api/users/my-user/password')
+          .send({password: newPass, oldPassword: password})
+          .expect(200);
+      });
+
+      describe('Error handling', () => {
+        beforeAll(() => {
+          disableErrorLogs();
+        });
+
+        afterAll(() => {
+          enableErrorLogs();
+        });
+
+        test('Should fail for self if oauth user', async () => {
+          const agent = request.agent(app);
+          await loginWithEmail(agent, oAuthUser.email);
+          await agent
+            .put('/api/users/my-user/password')
+            .send({password: newPass, oldPassword: password})
+            .expect(403);
+          await oAuthUser.reload();
+          expect(oAuthUser.password).toBeNull();
+        });
+
+        test('Should fail if oldPassword is missing', async () => {
+          const agent = request.agent(app);
+          await agent
+            .post('/api/auth/login')
+            .send({
+              email: passwordUser.email,
+              password: password
+            })
+            .expect(200);
+          await agent
+            .put('/api/users/my-user/password')
+            .send({password: newPass})
+            .expect(400, {message: 'Old password is required.'});
+        });
+
+        test('Should fail if oldPassword is wrong', async () => {
+          const agent = request.agent(app);
+          await agent
+            .post('/api/auth/login')
+            .send({
+              email: passwordUser.email,
+              password: password
+            })
+            .expect(200);
+          await agent
+            .put('/api/users/my-user/password')
+            .send({password: newPass, oldPassword: 'wrong-password'})
+            .expect(400, {message: 'Old password is wrong. Try again.'});
+        });
+      });
+    });
+
+    describe('POST /users', () => {
+      test('Should fail if user exists', async () => {
+        disableErrorLogs();
+        await agent
+          .post('/api/users')
+          .send({email: verifiedUser.email,
+            name: 'existing user',
+            password: 'strongEnough'})
+          .expect(400, {message: 'User of given email already exists.'});
+        enableErrorLogs();
+      });
+
+      test('Should not be auto-verified with company email', async () => {
+        const fakeEmail = 'faker' + process.env.COMPANY_EMAIL;
+        await agent
+          .post('/api/users')
+          .send({email: fakeEmail,
+            name: 'Fake employee',
+            password: 'strongEnough'})
+          .expect(200);
+        const newUser = await User.findOneOrFail({where: {email: fakeEmail}});
+        expect(newUser.role).toBe(UserRole.UNVERIFIED);
       });
     });
   });

@@ -6,9 +6,12 @@ import {
 } from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
-import {passport} from './middlewares/passport';
+import {passport, passwordLogin} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
-import {getUsers, getUser, putUpdatedUser, deleteDeleteUser, postClearSessions} from './controllers/user.controller';
+import {
+  getUsers, getUser, putUpdatedUser, deleteDeleteUser,
+  postClearSessions, putUserPassword, postUser, putMyUserPassword
+} from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations,
   getMyReservations, deleteReservations, getUserReservations
@@ -18,6 +21,7 @@ export function createRouter(): Router {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
+  router.post('/users', asyncWrapper(postUser));
 
   // All routes after this require login
   router.use(loginRequired);
@@ -30,6 +34,8 @@ export function createRouter(): Router {
   router.delete('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(deleteParkingspot));
 
   router.get('/users', adminRoleRequired, asyncWrapper(getUsers));
+  router.put('/users/my-user/password', asyncWrapper(putMyUserPassword));
+  router.put('/users/:userId/password', adminRoleRequired, asyncWrapper(putUserPassword));
   router.get('/users/:userId', adminRoleRequired, asyncWrapper(getUser));
   router.put('/users/:userId', adminRoleRequired, asyncWrapper(putUpdatedUser));
   router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteDeleteUser));
@@ -99,13 +105,7 @@ function createAuthRouter(): Router {
     }
   );
 
-  // GET LOGOUT IS DEPRECATED
-  router.get('/logout', (req, res) => {
-    req.logout();
-    res.json({
-      message: 'Successfully logged out'
-    });
-  });
+  router.post('/login', passwordLogin);
 
   router.post('/logout', (req, res) => {
     req.logout();
