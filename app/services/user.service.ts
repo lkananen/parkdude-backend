@@ -45,7 +45,7 @@ export async function fetchUser(id: string): Promise<User> {
 
 /**
  * Used for Google login, in which email is always verified.
- * Is user has not logged in before, a new user is created.
+ * If user has not logged in before, a new user is created.
  */
 export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
   let user = await User.findOne({email});
