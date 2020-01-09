@@ -52,6 +52,9 @@ export interface ReservationResponse {
   parkingSpot: BasicParkingSpotData;
 }
 
+export interface FullReservationResponse extends ReservationResponse {
+  user: UserData;
+}
 
 export interface DeleteReservationsFailureResponse {
   message: string;
@@ -81,6 +84,11 @@ export interface DayReservationStatus extends BasicParkingSpotData {
 
 export interface UserReservationsResponse {
   ownedSpots: BasicParkingSpotData[];
+  reservations: ReservationResponse[];
+  releases: ReleaseResponse[];
+}
+
+export interface ReservationsResponse {
   reservations: ReservationResponse[];
   releases: ReleaseResponse[];
 }

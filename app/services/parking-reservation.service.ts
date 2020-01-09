@@ -141,12 +141,20 @@ async function addOwnReservationsToCalendar(
   }
 }
 
-export async function fetchReservations(startDate: string, endDate: string, user?: User) {
+export async function fetchReservations(startDate: string, endDate: string, user?: User, spot?: ParkingSpot) {
   const where = {
     date: Between(startDate, endDate),
-    user: user
+    user,
+    spot
   };
-  const relations = ['spot'];
+  // Even undefined values need to be removed for condition to work
+  if (!user) {
+    delete where.user;
+  }
+  if (!spot) {
+    delete where.spot;
+  }
+  const relations = ['spot', 'user'];
   const order: OrderByCondition = {
     date: 'ASC'
   };

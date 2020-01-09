@@ -2,7 +2,8 @@ import {Request, Response} from 'express';
 import {
   GetReservationsCalendarResponse, PostReservationsBody,
   PostReservationsResponse, UserReservationsResponse,
-  DeleteReservationsResponse
+  DeleteReservationsResponse,
+  ReservationsResponse
 } from '../interfaces/parking-reservation.interfaces';
 import {
   fetchCalendar, fetchReservations, fetchReleases, reserveSpots, releaseSpots
@@ -26,6 +27,7 @@ export async function getReservationsCalendar(req: Request, res: Response) {
 
   const ownedSpots: BasicParkingSpotData[] = (await (req.user as User).ownedParkingSpots)
     .map((spot) => spot.toBasicParkingSpotData());
+  ownedSpots.sort((a, b) => a.name < b.name ? -1 : 1);
   const calendar = await fetchCalendar(startDate, endDate, req.user as User, parkingSpotId);
   const json: GetReservationsCalendarResponse = {
     calendar,
@@ -56,6 +58,19 @@ export async function getUserReservations(req: Request, res: Response) {
   const json: UserReservationsResponse = {
     ownedSpots,
     reservations: reservations.map((reservation) => reservation.toReservationResponse()),
+    releases: releases.map((release) => release.toReleaseResponse())
+  };
+
+  res.status(200).json(json);
+}
+
+export async function getReservations(req: Request, res: Response) {
+  // Default: get "all" future reservations
+  const {startDate = toDateString(new Date()), endDate = toDateString(new Date(9999, 12))} = req.query;
+  const reservations = await fetchReservations(startDate, endDate);
+  const releases = await fetchReleases(startDate, endDate);
+  const json: ReservationsResponse = {
+    reservations: reservations.map((reservation) => reservation.toFullReservationResponse()),
     releases: releases.map((release) => release.toReleaseResponse())
   };
 

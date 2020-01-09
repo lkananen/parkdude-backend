@@ -14,7 +14,8 @@ import {
 } from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations,
-  getMyReservations, deleteReservations, getUserReservations
+  getMyReservations, deleteReservations, getUserReservations,
+  getReservations
 } from './controllers/parking-reservation.controller';
 
 export function createRouter(): Router {
@@ -42,6 +43,7 @@ export function createRouter(): Router {
   router.post('/users/:userId/clearSessions', adminRoleRequired, asyncWrapper(postClearSessions));
   router.get('/users/:userId/reservations', adminRoleRequired, asyncWrapper(getUserReservations));
 
+  router.get('/parking-reservations', adminRoleRequired, asyncWrapper(getReservations));
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
   router.get('/parking-reservations/parking-spot/:parkingSpotId/calendar', asyncWrapper(getReservationsCalendar));
