@@ -33,9 +33,11 @@ export class ParkdudeBackendStack extends cdk.Stack {
 
     const parkdudeVPCSecGroup = new ec2.SecurityGroup(this, 'ParkdudeVPCSecGroup', {
       vpc: parkdudeVpc,
-      allowAllOutbound: false
+      allowAllOutbound: true // TODO: FIX, allows all traffic from outside until more specific rules are created!
     });
 
+
+    /*
     parkdudeVPCSecGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(5432),
@@ -71,6 +73,8 @@ export class ParkdudeBackendStack extends cdk.Stack {
       ec2.Port.tcp(80),
       'HTTP default outbound port for Lambda'
     );
+    */
+
     // Automatically creates a password for database.
     // Password must consist of ASCII characters, not including [ /@"']
     const secret = new Secret(this, 'DatabasePassword', {generateSecretString: {excludeCharacters: '/@"\''}});

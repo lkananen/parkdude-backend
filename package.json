@@ -23,7 +23,7 @@
     "typeorm:show": "npm run typeorm migration:show -- --config env/app.dev.env",
     "typeorm:migrate": "npm run typeorm migration:run -- --config env/app.dev.env",
     "typeorm:revert": "npm run typeorm migration:revert -- --config env/app.dev.env",
-    "aws-init": "cdk bootstrap",
+    "aws-init": "cdk bootstrap --region eu-north-1",
     "aws-build": "cdk synth ParkdudeBackendStack",
     "aws-deploy": "cdk deploy ParkdudeBackendStack",
     "aws-destroy": "cdk destroy ParkdudeBackendStack"
