@@ -28,7 +28,7 @@ function padZero(number: number) {
   return number < 10 ? '0' + number : number.toString();
 }
 
-function isValidDate(date: Date) {
+export function isValidDate(date: Date) {
   return date instanceof Date && !isNaN(date.getTime());
 }
 
@@ -50,4 +50,31 @@ export function validateDateRange(startDate: string, endDate: string, maxRange: 
   if (timeDifference > maxRange * MILLISECONDS_IN_DAY) {
     throw new BadRequestError(`Date range is too long (over ${maxRange} days).`);
   }
+}
+
+export function formatDateRange(startDate: string, endDate: string) {
+  return startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} - ${formatDate(endDate)}`;
+}
+
+export function formatDate(date: string) {
+  const [year, month, day] = date.split('-');
+  return `${day}.${month}.${year}`;
+}
+
+/**
+ * Used to parse input received from users via Slack commands
+ */
+export function parseDateInput(dateInput?: string) {
+  // Defaults to current date
+  let date = new Date();
+  if (dateInput) {
+    if (dateInput === 'tomorrow') {
+      date.setDate(date.getDate()+1);
+      return date;
+    }
+    const [day, month, year] = dateInput.split('.').map((str) => +str);
+    // Parse used to verify that date is valid
+    date = new Date(Date.parse(`${year || date.getFullYear()}-${month}-${day}`));
+  }
+  return date;
 }

@@ -6,17 +6,22 @@ import {
 } from './controllers/parking-spot.controller';
 import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
-import {passport} from './middlewares/passport';
+import {passport, passwordLogin} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
-import {getUsers, getUser, putUpdatedUser, deleteUser} from './controllers/user.controller';
 import {
-  getReservationsCalendar, postReservations, getReservationsForDate, getMyReservations, deleteReservations
+  getUsers, getUser, putUpdatedUser, deleteDeleteUser,
+  postClearSessions, putUserPassword, postUser, putMyUserPassword
+} from './controllers/user.controller';
+import {
+  getReservationsCalendar, postReservations,
+  getMyReservations, deleteReservations, getUserReservations
 } from './controllers/parking-reservation.controller';
 
 export function createRouter(): Router {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
+  router.post('/users', asyncWrapper(postUser));
 
   // All routes after this require login
   router.use(loginRequired);
@@ -29,16 +34,19 @@ export function createRouter(): Router {
   router.delete('/parking-spots/:spotId', adminRoleRequired, asyncWrapper(deleteParkingspot));
 
   router.get('/users', adminRoleRequired, asyncWrapper(getUsers));
+  router.put('/users/my-user/password', asyncWrapper(putMyUserPassword));
+  router.put('/users/:userId/password', adminRoleRequired, asyncWrapper(putUserPassword));
   router.get('/users/:userId', adminRoleRequired, asyncWrapper(getUser));
   router.put('/users/:userId', adminRoleRequired, asyncWrapper(putUpdatedUser));
-  router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteUser));
+  router.delete('/users/:userId', adminRoleRequired, asyncWrapper(deleteDeleteUser));
+  router.post('/users/:userId/clearSessions', adminRoleRequired, asyncWrapper(postClearSessions));
+  router.get('/users/:userId/reservations', adminRoleRequired, asyncWrapper(getUserReservations));
 
   router.post('/parking-reservations', asyncWrapper(postReservations));
   router.get('/parking-reservations/calendar', asyncWrapper(getReservationsCalendar));
   router.get('/parking-reservations/parking-spot/:parkingSpotId/calendar', asyncWrapper(getReservationsCalendar));
   router.delete('/parking-reservations/parking-spot/:parkingSpotId', asyncWrapper(deleteReservations));
   router.get('/parking-reservations/my-reservations', asyncWrapper(getMyReservations));
-  router.get('/parking-reservations/days/:date', asyncWrapper(getReservationsForDate));
 
   return router;
 }
@@ -97,13 +105,7 @@ function createAuthRouter(): Router {
     }
   );
 
-  // GET LOGOUT IS DEPRECATED
-  router.get('/logout', (req, res) => {
-    req.logout();
-    res.json({
-      message: 'Successfully logged out'
-    });
-  });
+  router.post('/login', passwordLogin);
 
   router.post('/logout', (req, res) => {
     req.logout();

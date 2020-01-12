@@ -1,3 +1,5 @@
+import * as slackService from '../services/slack.service';
+
 import * as request from 'supertest';
 import {ParkingSpot} from '../entities/parking-spot';
 import {closeConnection} from '../test-utils/teardown';
@@ -13,13 +15,15 @@ describe('Parking reservations (e2e)', () => {
   let parkingSpots: ParkingSpot[];
   let user: User;
   let user2: User;
+  let adminUser: User;
+  const slackMessageSpy = jest.spyOn(slackService, 'sendSlackMessage');
 
   beforeEach(async () => {
     agent = await createAppWithNormalSession();
     parkingSpots = await Promise.all([
+      ParkingSpot.create({name: 'test space 0'}).save(),
       ParkingSpot.create({name: 'test space 1'}).save(),
-      ParkingSpot.create({name: 'test space 2'}).save(),
-      ParkingSpot.create({name: 'test space 3'}).save()
+      ParkingSpot.create({name: 'test space 2'}).save()
     ]);
     user = await User.findOneOrFail({email: TEST_USER_EMAIL});
     user2 = await User.create({
@@ -27,6 +31,12 @@ describe('Parking reservations (e2e)', () => {
       email: 'tester2@example.com',
       role: UserRole.VERIFIED}
     ).save();
+    adminUser = await User.create({
+      name: 'Admin Tester',
+      email: 'admin@example.com',
+      role: UserRole.ADMIN
+    }).save();
+    slackMessageSpy.mockClear();
   });
 
   afterEach(async () => {
@@ -607,21 +617,56 @@ describe('Parking reservations (e2e)', () => {
         spot: parkingSpots[2],
         date: '2019-11-02'
       }).save();
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-04'
+      }).save();
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-05'
+      }).save();
 
       await DayRelease.create({
         spot: parkingSpots[1],
         date: '2019-11-03'
       }).save();
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-11-04'
+      }).save();
+      await DayRelease.create({
+        spot: parkingSpots[0],
+        date: '2019-11-05'
+      }).save();
 
-      await agent.get('/api/parking-reservations/my-reservations?startDate=2019-11-02&endDate=2019-11-03')
+      await agent.get('/api/parking-reservations/my-reservations?startDate=2019-11-02&endDate=2019-11-05')
         .expect(200, {
           reservations: [{
             date: '2019-11-02',
             parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-04',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-05',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
           }],
           releases: [{
             date: '2019-11-03',
-            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+            reservation: null
+          }, {
+            date: '2019-11-04',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+            reservation: {
+              user: user.toUserData()
+            }
+          }, {
+            date: '2019-11-05',
+            parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+            reservation: null
           }],
           ownedSpots: [
             parkingSpots[0].toBasicParkingSpotData(),
@@ -740,6 +785,190 @@ describe('Parking reservations (e2e)', () => {
     });
   });
 
+  describe('GET /api/users/:userId/reservations', () => {
+    beforeEach(async () => {
+      await loginWithEmail(agent, adminUser.email);
+    });
+
+    test('Should get reservations, releases and parking spots', async () => {
+      parkingSpots[0].owner = user;
+      parkingSpots[1].owner = user;
+      await parkingSpots[0].save();
+      await parkingSpots[1].save();
+
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[2],
+        date: '2019-11-02'
+      }).save();
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-04'
+      }).save();
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-05'
+      }).save();
+
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-11-03'
+      }).save();
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-11-04'
+      }).save();
+      await DayRelease.create({
+        spot: parkingSpots[0],
+        date: '2019-11-05'
+      }).save();
+
+      await agent.get(`/api/users/${user.id}/reservations?startDate=2019-11-02&endDate=2019-11-05`)
+        .expect(200, {
+          reservations: [{
+            date: '2019-11-02',
+            parkingSpot: parkingSpots[2].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-04',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-05',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+          }],
+          releases: [{
+            date: '2019-11-03',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+            reservation: null
+          }, {
+            date: '2019-11-04',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+            reservation: {
+              user: user.toUserData()
+            }
+          }, {
+            date: '2019-11-05',
+            parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+            reservation: null
+          }],
+          ownedSpots: [
+            parkingSpots[0].toBasicParkingSpotData(),
+            parkingSpots[1].toBasicParkingSpotData()
+          ]
+        });
+    });
+
+    test('Should not show past reservations', async () => {
+      parkingSpots[0].owner = user;
+      parkingSpots[1].owner = user;
+      await parkingSpots[0].save();
+      await parkingSpots[1].save();
+
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[2],
+        date: '2019-10-02'
+      }).save();
+
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-10-03'
+      }).save();
+
+      await agent.get(`/api/users/${user.id}/reservations?startDate=2019-11-02&endDate=2019-11-03`)
+        .expect(200, {
+          reservations: [],
+          releases: [],
+          ownedSpots: [
+            parkingSpots[0].toBasicParkingSpotData(),
+            parkingSpots[1].toBasicParkingSpotData()
+          ]
+        });
+    });
+
+    test('Should not show wrong user\'s reservations or spots', async () => {
+      parkingSpots[0].owner = user2;
+      parkingSpots[1].owner = user2;
+      await Promise.all([parkingSpots[0].save(), parkingSpots[1].save()]);
+
+      await DayReservation.create({
+        user: user2,
+        spot: parkingSpots[2],
+        date: '2019-11-02'
+      }).save();
+
+      await DayRelease.create({
+        spot: parkingSpots[1],
+        date: '2019-11-03'
+      }).save();
+
+      await agent.get(`/api/users/${user.id}/reservations?startDate=2019-11-02&endDate=2019-11-03`)
+        .expect(200, {
+          reservations: [],
+          releases: [],
+          ownedSpots: []
+        });
+    });
+
+    test('startDate should default to current day', async () => {
+      const currentDate = new Date();
+      const previousDate = new Date();
+      previousDate.setDate(previousDate.getDate() - 1);
+
+      // Should not be in results
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[0],
+        date: toDateString(previousDate)
+      }).save();
+
+      // Should be in results
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: toDateString(currentDate)
+      }).save();
+
+      await agent.get(`/api/users/${user.id}/reservations?endDate=${toDateString(currentDate)}`)
+        .expect(200, {
+          reservations: [{
+            date: toDateString(currentDate),
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+          }],
+          releases: [],
+          ownedSpots: []
+        });
+    });
+
+    test('Reservations should be ordered by date', async () => {
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[0],
+        date: '2019-11-02'
+      }).save();
+
+      await DayReservation.create({
+        user: user,
+        spot: parkingSpots[1],
+        date: '2019-11-01'
+      }).save();
+
+      await agent.get(`/api/users/${user.id}/reservations?startDate=2019-11-01&endDate=2019-11-03`)
+        .expect(200, {
+          reservations: [{
+            date: '2019-11-01',
+            parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+          }, {
+            date: '2019-11-02',
+            parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+          }],
+          releases: [],
+          ownedSpots: []
+        });
+    });
+  });
+
   describe('POST /api/parking-reservations', () => {
     describe('Regular spots', () => {
       test('Should reserve specific spot for user for specific day', async () => {
@@ -765,6 +994,12 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve specific spot for user for multiple days', async () => {
@@ -802,9 +1037,15 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+          ]
+        ]);
       });
 
-      test('Should reserve from different spots if same is not (spot not specified)', async () => {
+      test('Should reserve from different spots if same is not available (spot not specified)', async () => {
         // Reserve some spots
         await agent.post('/api/parking-reservations')
           .send({
@@ -843,6 +1084,27 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019 - 02.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019\n' +
+            '- Parking spot test space 1: 03.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 02.11.2019 - 03.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 01.11.2019\n' +
+            '- Parking spot test space 1: 02.11.2019\n' +
+            '- Parking spot test space 0: 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve same spot if available when spot is not specified', async () => {
@@ -878,6 +1140,20 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 03.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should reserve spots in order of availability', async () => {
@@ -933,6 +1209,48 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019 - 03.11.2019\n' +
+            '- Parking spot test space 0: 05.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019\n' +
+            '- Parking spot test space 1: 04.11.2019\n' +
+            '- Parking spot test space 1: 07.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 04.11.2019\n' +
+            '- Parking spot test space 2: 06.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 01.11.2019 - 03.11.2019\n' +
+            '- Parking spot test space 0: 04.11.2019\n' +
+            '- Parking spot test space 2: 05.11.2019\n' +
+            '- Parking spot test space 1: 06.11.2019\n' +
+            '- Parking spot test space 2: 07.11.2019'
+          ],
+        ]);
+      });
+
+      test('Should reserve spot that is reserved for another day', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
+        // Reserve for different day
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-02'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200);
       });
     });
 
@@ -953,7 +1271,7 @@ describe('Parking reservations (e2e)', () => {
       });
 
       test('Should be able to reserve a released spot', async () => {
-        parkingSpots[0].owner = user;
+        parkingSpots[0].owner = user2;
         await parkingSpots[0].save();
 
         await DayRelease.create({
@@ -973,10 +1291,16 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should not be able to reserve owned spot released on different day', async () => {
-        parkingSpots[0].owner = user;
+        parkingSpots[0].owner = user2;
         await parkingSpots[0].save();
 
         await DayRelease.create({
@@ -996,7 +1320,7 @@ describe('Parking reservations (e2e)', () => {
       });
 
       test('Should be able to reserve owned spot which has been reserved after release', async () => {
-        parkingSpots[0].owner = user;
+        parkingSpots[0].owner = user2;
         await parkingSpots[0].save();
 
         await DayRelease.create({
@@ -1028,11 +1352,17 @@ describe('Parking reservations (e2e)', () => {
             errorDates: ['2019-11-01'],
             message: 'Reservation failed. There weren\'t available spots for some of the days.'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should be able to reserve released owned spots and non-owned spots', async () => {
-        parkingSpots[0].owner = user;
-        parkingSpots[1].owner = user;
+        parkingSpots[0].owner = user2;
+        parkingSpots[1].owner = user2;
         await parkingSpots[0].save();
         await parkingSpots[1].save();
 
@@ -1069,6 +1399,206 @@ describe('Parking reservations (e2e)', () => {
             }],
             message: 'Spots successfully reserved'
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 2: 01.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 0: 01.11.2019\n' +
+            '- Parking spot test space 2: 02.11.2019'
+          ]
+        ]);
+      });
+    });
+
+    describe('Reserving own releases', () => {
+      test('Should remove own release', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+
+        expect(await DayRelease.count()).toBe(1);
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        expect(await DayRelease.count()).toBe(0);
+        expect(await DayReservation.count()).toBe(0);
+      });
+
+      test('Should remove own releases', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-02'
+        }).save();
+
+        expect(await DayRelease.count()).toBe(2);
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        expect(await DayRelease.count()).toBe(0);
+        expect(await DayReservation.count()).toBe(0);
+      });
+
+      test('Should remove own release when reserving random spot', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = user2;
+        parkingSpots[2].owner = user2;
+        await parkingSpots[0].save();
+        await parkingSpots[1].save();
+        await parkingSpots[2].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+
+        expect(await DayRelease.count()).toBe(1);
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01']
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        expect(await DayRelease.count()).toBe(0);
+        expect(await DayReservation.count()).toBe(0);
+      });
+
+      test('Should reserve normally and remove release', async () => {
+        parkingSpots[0].owner = user;
+        parkingSpots[1].owner = user2;
+        parkingSpots[2].owner = user2;
+        await parkingSpots[0].save();
+        await parkingSpots[1].save();
+        await parkingSpots[2].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spot: parkingSpots[1],
+          date: '2019-11-02'
+        }).save();
+
+        expect(await DayRelease.count()).toBe(2);
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02']
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        expect(await DayRelease.count()).toBe(1);
+        expect(await DayReservation.count()).toBe(1);
+      });
+
+      test('Should not remove own release if it is reserved', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+        await DayReservation.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01',
+          user: user2
+        }).save();
+
+        expect(await DayRelease.count()).toBe(1);
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(400, {
+            errorDates: ['2019-11-01'],
+            message: 'Reservation failed. There weren\'t available spots for some of the days.'
+          });
+        expect(await DayRelease.count()).toBe(1);
+        expect(await DayReservation.count()).toBe(1);
+      });
+
+      test('Should not remove own releases from other days', async () => {
+        parkingSpots[0].owner = user;
+        await parkingSpots[0].save();
+
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-01'
+        }).save();
+        await DayRelease.create({
+          spot: parkingSpots[0],
+          date: '2019-11-02'
+        }).save();
+
+        expect(await DayRelease.count()).toBe(2);
+
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: parkingSpots[0].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[0].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        expect(await DayRelease.count()).toBe(1);
+        expect(await DayReservation.count()).toBe(0);
       });
     });
 
@@ -1196,6 +1726,16 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ]
+        ]);
       });
 
       test('Should not remove reservations from other days', async () => {
@@ -1229,6 +1769,17 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019\n' +
+            '- 03.11.2019'
+          ]
+        ]);
       });
 
       test('Should not remove reservations from other users', async () => {
@@ -1257,7 +1808,6 @@ describe('Parking reservations (e2e)', () => {
             ownedSpots: []
           });
       });
-
 
       test('Should remove reservations from other users with admin role', async () => {
         await DayReservation.create({
@@ -1303,12 +1853,66 @@ describe('Parking reservations (e2e)', () => {
             reservations: [],
             releases: [{
               date: '2019-11-01',
-              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
             }],
             ownedSpots: [
               parkingSpots[1].toBasicParkingSpotData()
             ]
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ]
+        ]);
+      });
+
+      test('Should release multiple owned spots', async () => {
+        parkingSpots[1].owner = user;
+        await parkingSpots[1].save();
+        await agent.delete(
+          `/api/parking-reservations/parking-spot/${parkingSpots[1].id}?` +
+          'dates=2019-11-05,2019-11-01,2019-11-02,2019-11-03,2019-11-30'
+        )
+          .expect(200, {message: 'Parking reservations successfully released.'});
+
+        await agent.get('/api/parking-reservations/my-reservations?startDate=2019-01-01&endDate=2019-12-31')
+          .expect({
+            reservations: [],
+            releases: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-03',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-05',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }, {
+              date: '2019-11-30',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
+            }],
+            ownedSpots: [
+              parkingSpots[1].toBasicParkingSpotData()
+            ]
+          });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019 - 03.11.2019\n' +
+            '- 05.11.2019\n' +
+            '- 30.11.2019'
+          ]
+        ]);
       });
 
       test('Should not release another user\'s owned spots', async () => {
@@ -1345,7 +1949,8 @@ describe('Parking reservations (e2e)', () => {
             reservations: [],
             releases: [{
               date: '2019-11-01',
-              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+              reservation: null
             }],
             ownedSpots: [
               parkingSpots[1].toBasicParkingSpotData()
@@ -1400,6 +2005,20 @@ describe('Parking reservations (e2e)', () => {
             releases: [],
             ownedSpots: []
           });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ],
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019'
+          ]
+        ]);
       });
     });
 

@@ -6,6 +6,8 @@ import fs = require('fs');
 import path = require('path');
 import ec2 = require('@aws-cdk/aws-ec2');
 import rds = require('@aws-cdk/aws-rds');
+import {Topic} from '@aws-cdk/aws-sns';
+import {LambdaSubscription} from '@aws-cdk/aws-sns-subscriptions';
 import {LambdaIntegration} from '@aws-cdk/aws-apigateway';
 import {Duration} from '@aws-cdk/core';
 import {SubnetType} from '@aws-cdk/aws-ec2';
@@ -78,10 +80,39 @@ export class ParkdudeBackendStack extends cdk.Stack {
       TYPEORM_PORT: '5432'
     };
 
+    // Subscription which can be used to launch AsyncSlackBot lambda from slack bot lambda
+    const asyncSlackCommandsTopic = new Topic(this, 'AsyncSlackCommandsTopic', {
+      displayName: 'Subscription topic for longer Slack command lambdas'
+    });
+
     const restApiHandler = new lambda.Function(this, 'RestApiHandler', {
       runtime: lambda.Runtime.NODEJS_10_X,
-      code: lambda.Code.asset('./build'),
-      handler: 'handlers/rest-api.handler',
+      code: lambda.Code.asset('./build/handlers/rest-api'),
+      handler: 'lambda.handler',
+      environment: {...this.getLambdaEnvironmentVariables(), ...databaseEnv},
+      timeout: Duration.seconds(10),
+      vpc: parkdudeVpc,
+      vpcSubnets: parkdudeVpc.selectSubnets({
+        subnetType: SubnetType.PRIVATE
+      }),
+      securityGroup: parkdudeVPCSecGroup
+    });
+
+    const slackBotHandler = new lambda.Function(this, 'SlackBotHandler', {
+      runtime: lambda.Runtime.NODEJS_10_X,
+      code: lambda.Code.asset('./build/handlers/slack-bot'),
+      handler: 'lambda.handler',
+      environment: {
+        ...this.getLambdaEnvironmentVariables(),
+        SLACK_STATUS_LAMBDA_ARN: asyncSlackCommandsTopic.topicArn
+      },
+      timeout: Duration.seconds(4),
+    });
+
+    const asyncSlackBotHandler = new lambda.Function(this, 'AsyncSlackBotHandler', {
+      runtime: lambda.Runtime.NODEJS_10_X,
+      code: lambda.Code.asset('./build/handlers/async-slack-bot'),
+      handler: 'lambda.handler',
       environment: {...this.getLambdaEnvironmentVariables(), ...databaseEnv},
       timeout: Duration.seconds(10),
       vpc: parkdudeVpc,
@@ -101,6 +132,12 @@ export class ParkdudeBackendStack extends cdk.Stack {
       defaultIntegration: new LambdaIntegration(restApiHandler),
       anyMethod: true
     });
+    const slackApiRoot = restApiRoot.addResource('slack');
+    slackApiRoot.addMethod('POST', new LambdaIntegration(slackBotHandler));
+
+    // AsyncSlackBotHandler lambda can only be called from slackBotHandler lambda
+    asyncSlackCommandsTopic.addSubscription(new LambdaSubscription(asyncSlackBotHandler));
+    asyncSlackCommandsTopic.grantPublish(slackBotHandler);
   }
 
   private getLambdaEnvironmentVariables(): dotenv.DotenvParseOutput {

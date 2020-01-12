@@ -6,11 +6,15 @@ const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
-  entry: './handlers/rest-api.ts',
+  entry: {
+    'rest-api/lambda': './handlers/rest-api.ts',
+    'slack-bot/lambda': './handlers/slack-bot.ts',
+    'async-slack-bot/lambda': './handlers/async-slack-bot.ts'
+  },
   output: {
-    filename: 'rest-api.js',
     path: path.resolve(__dirname, 'build/handlers'),
-    libraryTarget: 'commonjs'
+    libraryTarget: 'commonjs',
+    pathinfo: false
   },
   resolve: {
     extensions: ['.ts', '.js']
@@ -30,14 +34,27 @@ module.exports = {
   },
   target: 'node',
   optimization: {
-    // TypeORM needs full names
-    minimize: false,
+    minimize: true,
+    flagIncludedChunks: true,
+    occurrenceOrder: true,
+    concatenateModules: true,
+    checkWasmTypes: true,
+    nodeEnv: false
+  },
+  stats: {
+    warningsFilter: /^(?!CriticalDependenciesWarning$)/
   },
   plugins: [
     // Filter TypeORM
     new FilterWarningsPlugin({
-      exclude: [/mongodb/, /mssql/, /mysql/, /mysql2/, /oracledb/, /pg-query-stream/, /redis/, /sqlite3/]
+      exclude: [
+        /mongodb/, /mssql/, /mysql/, /mysql2/, /oracledb/, /pg-query-stream/,
+        /redis/, /sqlite3/, /react-native/
+      ]
     }),
     new webpack.IgnorePlugin(/^pg-native$/)
-  ]
+  ],
+  externals: {
+    'aws-sdk': 'aws-sdk'
+  }
 };

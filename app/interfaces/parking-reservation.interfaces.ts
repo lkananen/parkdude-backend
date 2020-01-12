@@ -1,4 +1,5 @@
 import {BasicParkingSpotData} from './parking-spot.interfaces';
+import {UserData} from './user.interfaces';
 
 export interface GetReservationsCalendarResponse {
   calendar: CalendarEntry[];
@@ -65,6 +66,9 @@ export interface ReservationResponse {
 export interface ReleaseResponse {
   date: string;
   parkingSpot: BasicParkingSpotData;
+  reservation?: {
+    user: UserData;
+  };
 }
 
 export interface GetReservationsForDateResponse {
@@ -75,7 +79,7 @@ export interface DayReservationStatus extends BasicParkingSpotData {
   isReservedByUser: boolean;
 }
 
-export interface MyReservationsResponse {
+export interface UserReservationsResponse {
   ownedSpots: BasicParkingSpotData[];
   reservations: ReservationResponse[];
   releases: ReleaseResponse[];
@@ -87,7 +91,7 @@ export interface ParkingSpotDayStatus {
   reservationId?: string | null;
   releaseId?: string | null;
   reserverId?: string | null;
-  date: string | null;
+  date: string;
 }
 
 export interface QueriedParkingSpotDayStatus {
@@ -96,6 +100,12 @@ export interface QueriedParkingSpotDayStatus {
   reservationid?: string | null;
   releaseid?: string | null;
   reserverid?: string | null;
-  reservationdate: Date | null;
-  releasedate: Date | null;
+  spotdate: Date;
+}
+
+export interface ReservationRange {
+  startDate: string;
+  endDate: string;
+  spotId: string;
+  spotName: string;
 }

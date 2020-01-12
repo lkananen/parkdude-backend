@@ -4,10 +4,15 @@ import {User} from '../entities/user';
 import {getManager} from 'typeorm';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
+import {ConflictError} from '../utils/errors';
 
 export async function fetchParkingSpots(availableOnDates?: string[]): Promise<ParkingSpot[]> {
   if (!availableOnDates) {
-    return await ParkingSpot.find();
+    return await ParkingSpot.find({
+      order: {
+        name: 'ASC'
+      }
+    });
   }
 
   // Filter out spots which are not available on all the dates
@@ -30,22 +35,42 @@ export async function fetchParkingSpots(availableOnDates?: string[]): Promise<Pa
       'CASE WHEN dayReservation.id IS NULL AND (owner.id IS NULL OR dayRelease.id IS NOT NULL) THEN 0 ELSE 1 END' +
       ') = 0'
     )
+    .orderBy('spot.name')
     .getMany();
 }
 
-export async function fetchParkingspot(id: string): Promise<ParkingSpot> {
+export async function fetchParkingSpot(id: string): Promise<ParkingSpot> {
   return await ParkingSpot.findOneOrFail({id});
 }
 
+export async function fetchParkingSpotCount() {
+  return await ParkingSpot.count();
+}
+
 export async function createParkingSpot({name, ownerEmail}: ParkingSpotBody): Promise<ParkingSpot> {
-  const owner = ownerEmail ? await User.findOne({email: ownerEmail}) : undefined;
+  const owner = await getOwner(ownerEmail);
   return await ParkingSpot.create({name, owner}).save();
 }
 
 export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingSpotBody) {
-  const owner = ownerEmail ? await User.findOne({email: ownerEmail}) : undefined;
+  const owner = await getOwner(ownerEmail);
   const parkingSpot = await ParkingSpot.findOneOrFail({id});
   parkingSpot.name = name;
   parkingSpot.owner = owner;
   return await parkingSpot.save();
+}
+
+export async function deleteParkingSpot(id: string) {
+  return await ParkingSpot.delete(id);
+}
+
+async function getOwner(ownerEmail: string | undefined): Promise<User | null> {
+  if (ownerEmail === undefined) {
+    return null;
+  }
+  try {
+    return await User.findOneOrFail({email: ownerEmail});
+  } catch (err) {
+    throw new ConflictError('Could not find user with email: ' + ownerEmail);
+  }
 }

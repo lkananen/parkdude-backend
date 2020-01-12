@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import {
   GetReservationsCalendarResponse, PostReservationsBody,
-  PostReservationsResponse, GetReservationsForDateResponse, MyReservationsResponse,
+  PostReservationsResponse, UserReservationsResponse,
   DeleteReservationsResponse
 } from '../interfaces/parking-reservation.interfaces';
 import {
@@ -38,38 +38,27 @@ export async function getMyReservations(req: Request, res: Response) {
   // startDate defaults to current day (inclusive)
   const {startDate = toDateString(new Date()), endDate} = req.query;
   if (!endDate) {
-    throw new BadRequestError('startDate is required.');
+    throw new BadRequestError('endDate is required.');
   }
   validateDateRange(startDate, endDate, MAX_DATE_RANGE);
-  const ownedSpots: BasicParkingSpotData[] = (await (req.user as User).ownedParkingSpots)
+  req.params.userId = (req.user as User).id;
+  await getUserReservations(req, res);
+}
+
+export async function getUserReservations(req: Request, res: Response) {
+  const user = await fetchUser(req.params.userId);
+  // Default: get "all" future reservations
+  const {startDate = toDateString(new Date()), endDate = toDateString(new Date(9999, 12))} = req.query;
+  const ownedSpots: BasicParkingSpotData[] = (await user.ownedParkingSpots)
     .map((spot) => spot.toBasicParkingSpotData());
-  const reservations = await fetchReservations(startDate, endDate, req.user as User);
-  const releases = await fetchReleases(startDate, endDate, req.user as User);
-  const json: MyReservationsResponse = {
+  const reservations = await fetchReservations(startDate, endDate, user);
+  const releases = await fetchReleases(startDate, endDate, user);
+  const json: UserReservationsResponse = {
     ownedSpots,
     reservations: reservations.map((reservation) => reservation.toReservationResponse()),
     releases: releases.map((release) => release.toReleaseResponse())
   };
 
-  res.status(200).json(json);
-}
-
-export async function getReservationsForDate(req: Request, res: Response) {
-  const date = req.params.date;
-  const json: GetReservationsForDateResponse = {
-    parkingSpots: [
-      {
-        id: '123-id',
-        name: '313',
-        isReservedByUser: false
-      },
-      {
-        id: '124-id',
-        name: '314',
-        isReservedByUser: true
-      }
-    ]
-  };
   res.status(200).json(json);
 }
 
