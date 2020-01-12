@@ -29,7 +29,13 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
+      # Creates build directories, otherwise build fails
       - run: mkdir build
+      - run: mkdir build/handlers
+      - run: mkdir build/rest-api
+      - run: mkdir build/slack-bot
+      - run: mkdir build/async-slack-bot
+
       - run: mv env/app.test.example.env env/app.test.env && mv env/app.sam-dev.example.env env/app.sam-dev.env
       - run: npm install
 
