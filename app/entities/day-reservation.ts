@@ -6,7 +6,7 @@ import {
 
 import {ParkingSpot} from './parking-spot';
 import {User} from './user';
-import {ReservationResponse} from '../interfaces/parking-reservation.interfaces';
+import {ReservationResponse, FullReservationResponse} from '../interfaces/parking-reservation.interfaces';
 
 
 @Entity()
@@ -46,6 +46,15 @@ export class DayReservation extends BaseEntity {
     return {
       date,
       parkingSpot: spot.toBasicParkingSpotData()
+    };
+  }
+
+  toFullReservationResponse(): FullReservationResponse {
+    const {date, spot, user} = this;
+    return {
+      date,
+      parkingSpot: spot.toBasicParkingSpotData(),
+      user: user.toUserData()
     };
   }
 }
