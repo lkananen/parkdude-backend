@@ -149,7 +149,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
 
   private getLambdaEnvironmentVariables(): dotenv.DotenvParseOutput {
     // TODO: Handle different environments
-    return dotenv.parse(fs.readFileSync(path.join(__dirname, '../env/app.sam-dev.env')));
+    return dotenv.parse(fs.readFileSync(path.join(__dirname, '../env/app.prod.env')));
   }
 }
 
