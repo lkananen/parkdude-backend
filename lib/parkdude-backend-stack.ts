@@ -12,6 +12,7 @@ import {LambdaIntegration} from '@aws-cdk/aws-apigateway';
 import {Duration} from '@aws-cdk/core';
 import {SubnetType} from '@aws-cdk/aws-ec2';
 import {Secret} from '@aws-cdk/aws-secretsmanager';
+import {Bucket} from '@aws-cdk/aws-s3';
 
 export class ParkdudeBackendStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
