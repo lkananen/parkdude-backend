@@ -59,6 +59,7 @@
     "@aws-cdk/aws-kms": "^1.16.3",
     "@aws-cdk/aws-lambda": "^1.16.3",
     "@aws-cdk/aws-rds": "^1.16.3",
+    "@aws-cdk/aws-s3": "^1.16.3",
     "@aws-cdk/aws-secretsmanager": "^1.16.3",
     "@aws-cdk/aws-sns": "^1.16.3",
     "@aws-cdk/aws-sns-subscriptions": "^1.16.3",

@@ -138,6 +138,13 @@ export class ParkdudeBackendStack extends cdk.Stack {
     // AsyncSlackBotHandler lambda can only be called from slackBotHandler lambda
     asyncSlackCommandsTopic.addSubscription(new LambdaSubscription(asyncSlackBotHandler));
     asyncSlackCommandsTopic.grantPublish(slackBotHandler);
+
+    new Bucket(this, 'react-frontend-s3', {
+      websiteIndexDocument: 'index.html',
+      websiteErrorDocument: 'index.html',
+      bucketName: 'parkdude',
+      publicReadAccess: true
+    });
   }
 
   private getLambdaEnvironmentVariables(): dotenv.DotenvParseOutput {
