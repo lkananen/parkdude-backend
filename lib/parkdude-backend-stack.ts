@@ -22,13 +22,9 @@ export class ParkdudeBackendStack extends cdk.Stack {
         {
           subnetType: ec2.SubnetType.PUBLIC,
           name: 'Parkdude-Ingress'
-        },
-        {
-          subnetType: ec2.SubnetType.PRIVATE,
-          cidrMask: 28,
-          name: 'Parkdude-Database'
         }
-      ]
+      ],
+      natGateways: 0
     });
 
     const parkdudeVPCSecGroup = new ec2.SecurityGroup(this, 'ParkdudeVPCSecGroup', {
@@ -90,7 +86,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
       vpc: parkdudeVpc,
       vpcPlacement: parkdudeVpc.selectSubnets({
         // Defines the public accessability of the DB
-        subnetType: SubnetType.PRIVATE
+        subnetType: SubnetType.PUBLIC
       }),
       securityGroups: [parkdudeVPCSecGroup],
       databaseName: 'ParkdudePSQL'
@@ -109,12 +105,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
       code: lambda.Code.asset('./build'),
       handler: 'handlers/rest-api.handler',
       environment: {...this.getLambdaEnvironmentVariables(), ...databaseEnv},
-      timeout: Duration.seconds(10),
-      vpc: parkdudeVpc,
-      vpcSubnets: parkdudeVpc.selectSubnets({
-        subnetType: SubnetType.PRIVATE
-      }),
-      securityGroup: parkdudeVPCSecGroup
+      timeout: Duration.seconds(10)
     });
 
     const restApi = new apigateway.RestApi(this, 'rest-api', {
