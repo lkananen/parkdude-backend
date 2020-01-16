@@ -1,3 +1,4 @@
+import * as url from 'url';
 import {Router} from 'express';
 import {
   getParkingSpots, postParkingSpot,
@@ -8,6 +9,7 @@ import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport, passwordLogin} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
+import {BadRequestError} from './utils/errors';
 import {
   getUsers, getUser, putUpdatedUser, deleteDeleteUser,
   postClearSessions, putUserPassword, postUser, putMyUserPassword
@@ -99,9 +101,17 @@ function createAuthRouter(): Router {
     }), (req, res) => {
       const sessionId = encodeURIComponent(req.cookies.sessionId);
       if (req.session!.redirectUrl) {
-        // Note: RedirectUrl param must be disabled or removed as this will otherwise cause serious security issues
-        res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}`);
-        req.session!.redirectUrl = undefined;
+        const serverAddress = url.format({
+          protocol: req.protocol,
+          host: req.get('host')
+        });
+        if (req.session!.redirectUrl.startsWith(serverAddress)) {
+          res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}`);
+          req.session!.redirectUrl = undefined;
+        } else {
+          throw new BadRequestError(
+            `The supplied redirect URL is potentially unsafe. It has to start with '${serverAddress}'`);
+        }
       } else {
         res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${sessionId}`);
       }
