@@ -609,16 +609,18 @@ describe('Users (e2e)', () => {
         enableErrorLogs();
       });
 
-      test('Should not be auto-verified with company email', async () => {
+      test('Should not be allowed to password register with company email', async () => {
         const fakeEmail = 'faker' + process.env.COMPANY_EMAIL;
+        disableErrorLogs();
         await agent
           .post('/api/users')
           .send({email: fakeEmail,
             name: 'Fake employee',
             password: 'strongEnough'})
-          .expect(200);
-        const newUser = await User.findOneOrFail({where: {email: fakeEmail}});
-        expect(newUser.role).toBe(UserRole.UNVERIFIED);
+          .expect(403, {'message': 'Use of company email addresses is restricted to OAuth login only.'});
+        enableErrorLogs();
+        const newUser = await User.findOne({where: {email: fakeEmail}});
+        expect(newUser).toBe(undefined);
       });
     });
   });
