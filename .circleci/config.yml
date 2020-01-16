@@ -36,7 +36,7 @@ jobs:
       - run: mkdir build/handlers/slack-bot
       - run: mkdir build/handlers/async-slack-bot
 
-      - run: mv env/app.test.example.env env/app.test.env && mv env/app.sam-dev.example.env env/app.sam-dev.env
+      - run: mv env/app.test.example.env env/app.test.env && mv env/app.sam-dev.example.env env/app.prod.env
       - run: npm install
 
       - save_cache:
