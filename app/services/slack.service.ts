@@ -79,6 +79,7 @@ function getReservationRanges(reservations: (DayReservation|DayRelease)[]) {
         spotName: reservation.spot.name,
         spotId: reservation.spot.id
       };
+      prevDate = date;
     }
   }
   ranges.push(currentRange);
@@ -111,6 +112,7 @@ function getReleaseRanges(releases: ParkingSpotDayStatus[], spot: ParkingSpot) {
         spotName: spot.name,
         spotId: spot.id
       };
+      prevDate = date;
     }
   }
   ranges.push(currentRange);

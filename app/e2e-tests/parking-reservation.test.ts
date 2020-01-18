@@ -1835,6 +1835,37 @@ describe('Parking reservations (e2e)', () => {
           ]
         ]);
       });
+
+      test('Should handle multiple separate date ranges in Slack notifications', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-04', '2019-11-05'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-04',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-05',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 02.11.2019\n' +
+            '- Parking spot test space 1: 04.11.2019 - 05.11.2019'
+          ]
+        ]);
+      });
     });
 
     describe('Reserving own releases', () => {
@@ -2262,6 +2293,48 @@ describe('Parking reservations (e2e)', () => {
             message: 'Parking spot does not have reservation, and cannot be released.',
             errorDates: ['2019-11-01', '2019-11-02']
           });
+      });
+
+      test('Should handle multiple separate date ranges in Slack notifications', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01', '2019-11-02', '2019-11-04', '2019-11-05'],
+            parkingSpotId: parkingSpots[1].id
+          })
+          .expect(200, {
+            reservations: [{
+              date: '2019-11-01',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-02',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-04',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }, {
+              date: '2019-11-05',
+              parkingSpot: parkingSpots[1].toBasicParkingSpotData()
+            }],
+            message: 'Spots successfully reserved'
+          });
+
+        await agent.delete(
+          `/api/parking-reservations/parking-spot/${parkingSpots[1].id}` +
+          '?dates=2019-11-01,2019-11-02,2019-11-04,2019-11-05'
+        )
+          .expect(200, {message: 'Parking reservations successfully released.'});
+        expect(slackMessageSpy.mock.calls).toEqual([
+          [
+            'Reservations made by Tester:\n' +
+            '- Parking spot test space 1: 01.11.2019 - 02.11.2019\n' +
+            '- Parking spot test space 1: 04.11.2019 - 05.11.2019'
+          ],
+          [
+            'Parking spot test space 1 released for reservation:\n' +
+            '- 01.11.2019 - 02.11.2019\n' +
+            '- 04.11.2019 - 05.11.2019'
+          ]
+        ]);
       });
     });
 
