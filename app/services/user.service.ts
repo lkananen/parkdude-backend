@@ -89,9 +89,10 @@ export async function deleteUser(user: User) {
 
 export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
   const sessionRepo = getConnection().getRepository(Session);
-  const sessions = await sessionRepo.find() as SessionUser[];
+  let sessions = await sessionRepo.find() as SessionUser[];
 
-  sessions.forEach((sess) => sess.userId = JSON.parse(sess.json).passport.user);
+  sessions.forEach((sess) => sess.userId = JSON.parse(sess.json).passport?.user);
+  sessions = sessions.filter((sess) => sess.userId !== undefined);
   sessions.sort((a, b) => a.userId < b.userId ? -1 : 1);
   users.sort((a, b) => a.id < b.id ? -1 : 1);
 
