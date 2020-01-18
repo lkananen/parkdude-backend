@@ -55,7 +55,12 @@ describe('Users (e2e)', () => {
       test('Should check logged in', async () => {
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.UNVERIFIED, name});
+          .expect({
+            isAuthenticated: true,
+            userRole: UserRole.UNVERIFIED,
+            name,
+            email
+          });
       });
 
       test('Should not be able to reserve spot', async () => {
@@ -85,7 +90,12 @@ describe('Users (e2e)', () => {
       test('Should check logged in', async () => {
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name});
+          .expect({
+            isAuthenticated: true,
+            userRole: UserRole.VERIFIED,
+            name,
+            email
+          });
       });
 
       test('Should be able to get parking spots', async () => {
@@ -185,7 +195,12 @@ describe('Users (e2e)', () => {
           .expect(200);
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: passwordUser.name});
+          .expect({
+            isAuthenticated: true,
+            userRole: UserRole.VERIFIED,
+            name: passwordUser.name,
+            email: passwordUser.email
+          });
       });
 
 
@@ -230,7 +245,12 @@ describe('Users (e2e)', () => {
         await loginWithEmail(agent, oAuthUser.email);
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.VERIFIED, name: oAuthUser.name});
+          .expect({
+            isAuthenticated: true,
+            userRole: UserRole.VERIFIED,
+            name: oAuthUser.name,
+            email: oAuthUser.email
+          });
         await agent
           .post('/api/auth/logout')
           .expect({message: 'Successfully logged out'});
@@ -411,7 +431,12 @@ describe('Users (e2e)', () => {
         const user = await getUser({email: TEST_USER_EMAIL}) as User;
         await agent
           .get('/api/auth/login-state')
-          .expect({isAuthenticated: true, userRole: UserRole.ADMIN, name: user.name});
+          .expect({
+            isAuthenticated: true,
+            userRole: UserRole.ADMIN,
+            name: user.name,
+            email: TEST_USER_EMAIL
+          });
         await agent
           .post('/api/users/' + user.id + '/clearSessions');
         await agent
