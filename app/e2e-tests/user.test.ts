@@ -617,7 +617,7 @@ describe('Users (e2e)', () => {
           .send({email: fakeEmail,
             name: 'Fake employee',
             password: 'strongEnough'})
-          .expect(403, {'message': 'Use of company email addresses is restricted to OAuth login only.'});
+          .expect(403, {'message': 'Use of company email addresses is restricted to Google login only.'});
         enableErrorLogs();
         const newUser = await User.findOne({where: {email: fakeEmail}});
         expect(newUser).toBe(undefined);
