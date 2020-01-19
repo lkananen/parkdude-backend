@@ -121,7 +121,7 @@ export async function clearSessions(user: UserSessions) {
 
 export async function createPasswordVerifiedUser({name, email, password}: CreateUserBody) {
   if (isCompanyEmail(email)) {
-    throw new ForbiddenError('Use of company email addresses is restricted to OAuth login only.');
+    throw new ForbiddenError('Use of company email addresses is restricted to Google login only.');
   }
   const existingUser = await User.findOne({email});
   if (existingUser) {
