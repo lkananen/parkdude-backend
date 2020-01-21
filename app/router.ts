@@ -128,7 +128,8 @@ function createAuthRouter(): Router {
     res.json({
       isAuthenticated: true,
       userRole: user.role,
-      name: user.name
+      name: user.name,
+      email: user.email
     });
   });
 
