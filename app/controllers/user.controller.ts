@@ -38,6 +38,11 @@ export async function getUser(req: Request, res: Response) {
 export async function postUser(req: Request, res: Response) {
   const body: CreateUserBody = req.body;
   const user = await createPasswordVerifiedUser(body);
+  if ((req.user as User)?.role === UserRole.ADMIN) {
+    const data = user.toUserData();
+    data.role = UserRole.VERIFIED;
+    await updateUser(user, data);
+  }
   const json: PostUserResponse = {
     message: 'User created successfully',
     data: user.toUserData()

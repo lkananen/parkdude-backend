@@ -48,6 +48,10 @@ export async function createApp(): Promise<Express> {
     throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set and changed.');
   }
 
+  if (!process.env.COMPANY_EMAIL) {
+    throw new Error('Failed to read COMPANY_EMAIL environment variable. Make sure it is set.');
+  }
+
   app.use(session({
     secret: sessionSecret,
     name: 'sessionId',

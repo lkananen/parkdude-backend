@@ -53,13 +53,10 @@ export async function getOrCreateUser({email, name}: UserBody): Promise<User> {
     throw new ForbiddenError('User has a password. Google login is disabled.');
   }
   if (user === undefined) {
-    if (!process.env.COMPANY_EMAIL) {
-      throw new Error('Company email has not been defined!');
-    }
     user = await User.create({
       name: name,
       email: email,
-      role: email.endsWith(process.env.COMPANY_EMAIL) ? UserRole.VERIFIED : UserRole.UNVERIFIED,
+      role: isCompanyEmail(email) ? UserRole.VERIFIED : UserRole.UNVERIFIED,
       hasPassword: false
     }).save();
   }
@@ -124,6 +121,9 @@ export async function clearSessions(user: UserSessions) {
 }
 
 export async function createPasswordVerifiedUser({name, email, password}: CreateUserBody) {
+  if (isCompanyEmail(email)) {
+    throw new ForbiddenError('Use of company email addresses is restricted to Google login only.');
+  }
   const existingUser = await User.findOne({email});
   if (existingUser) {
     throw new BadRequestError('User of given email already exists.');
@@ -160,4 +160,8 @@ function validatePassword(password: string) {
   if (password.length < 8) {
     throw new BadRequestError('Password must be 8 characters or longer.');
   }
+}
+
+function isCompanyEmail(email: string) {
+  return email.endsWith(process.env.COMPANY_EMAIL!);
 }
