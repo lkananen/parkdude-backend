@@ -429,3 +429,47 @@ function getReleasesToAdd(parkingSpotStatuses: ParkingSpotDayStatus[]) {
     .filter(({reservationId}) => !reservationId)
     .map(({date, spotId}) => DayRelease.create({date: date!, spotId}));
 }
+
+/**
+ * "Resets" releases for parking spot when new owner is added or removed
+ * If new owner:
+ * - New owner's old reservations for the spot are removed
+ * - Releases without reservations removed
+ * - Releases with reservations are kept
+ * - Reservations without releases get releases
+ * If owner completely removed:
+ * - All releases removed
+ */
+export async function resetReleasesForNewOwner(spot: ParkingSpot, newOwner?: User|null) {
+  await getConnection().transaction(async (transactionManager) => {
+    const reservationRepository = transactionManager.getRepository(DayReservation);
+    const releaseRepository = transactionManager.getRepository(DayRelease);
+
+    // At first: remove all releases
+    const oldReleases = await releaseRepository.find({spotId: spot.id});
+    await releaseRepository.remove(oldReleases);
+
+    if (!newOwner) {
+      // Other changes don't apply if spot does not have owner
+      return;
+    }
+
+    // All owner reservations should be removed, since all days are "reserved" by default
+    const newOwnersOldReservations = await reservationRepository
+      .find({
+        spotId: spot.id,
+        userId: newOwner.id
+      });
+    await reservationRepository.remove(newOwnersOldReservations);
+
+    // Create releases for all existing reservations
+    const remainingReservations = await reservationRepository.find({spotId: spot.id});
+    const releases = remainingReservations.map(
+      (reservation) => releaseRepository.create({
+        date: reservation.date,
+        spotId: spot.id
+      })
+    );
+    await releaseRepository.save(releases);
+  });
+}

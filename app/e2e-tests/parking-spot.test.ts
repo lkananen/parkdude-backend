@@ -368,8 +368,8 @@ describe('Parking spots (e2e)', () => {
     });
 
     afterEach(async () => {
-      User.delete({});
-      ParkingSpot.delete({});
+      await User.delete({});
+      await ParkingSpot.delete({});
     });
 
     describe('PUT /api/parking-spots', () => {
@@ -429,6 +429,148 @@ describe('Parking spots (e2e)', () => {
           .expect(200);
         await parkingSpots[0].reload();
         expect(parkingSpots[0].name).toBe(newName);
+      });
+
+      describe('Reservation/release handling with owner changes', () => {
+        test('Should clear previous releases when owner is removed', async () => {
+          await agent.delete(
+            `/api/parking-reservations/parking-spot/${parkingSpots[1].id}?` +
+            'dates=2019-11-01,2019-11-02,2019-11-03'
+          );
+          await agent.post('/api/parking-reservations')
+            .send({
+              dates: ['2019-11-02', '2019-11-03'],
+              parkingSpotId: parkingSpots[1].id
+            });
+          // Remove owner
+          await agent
+            .put('/api/parking-spots/' + parkingSpots[1].id)
+            .send({name: 'Permanent spot'})
+            .expect(200);
+
+          await parkingSpots[1].reload();
+
+          await agent.get(`/api/parking-reservations?startDate=2019-01-01&endDate=2020-12-30`)
+            .expect(200, {
+              reservations: [{
+                date: '2019-11-02',
+                parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+                user: adminUser.toUserData()
+              }, {
+                date: '2019-11-03',
+                parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+                user: adminUser.toUserData()
+              }],
+              releases: [],
+            });
+        });
+
+        test('Should add releases when owner is added', async () => {
+          await agent.post('/api/parking-reservations')
+            .send({
+              dates: ['2019-11-02', '2019-11-03'],
+              parkingSpotId: parkingSpots[0].id
+            });
+          // Add owner
+          await agent
+            .put('/api/parking-spots/' + parkingSpots[0].id)
+            .send({name: 'Permanent spot', ownerEmail: user.email})
+            .expect(200);
+
+          await parkingSpots[0].reload();
+
+          await agent.get(`/api/parking-reservations?startDate=2019-01-01&endDate=2020-12-30`)
+            .expect(200, {
+              reservations: [{
+                date: '2019-11-02',
+                parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+                user: adminUser.toUserData()
+              }, {
+                date: '2019-11-03',
+                parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+                user: adminUser.toUserData()
+              }],
+              releases: [{
+                date: '2019-11-02',
+                parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+                reservation: {
+                  user: adminUser.toUserData()
+                }
+              }, {
+                date: '2019-11-03',
+                parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+                reservation: {
+                  user: adminUser.toUserData()
+                }
+              }],
+            });
+        });
+
+
+        test('Should remove new owner\'s old reservations', async () => {
+          // Reservations for new owner
+          await agent.post('/api/parking-reservations')
+            .send({
+              dates: ['2019-11-02', '2019-11-03'],
+              parkingSpotId: parkingSpots[0].id,
+              userId: user.id
+            });
+          // Reservations for other user
+          await agent.post('/api/parking-reservations')
+            .send({
+              dates: ['2019-11-04'],
+              parkingSpotId: parkingSpots[0].id
+            });
+          // Add owner
+          await agent
+            .put('/api/parking-spots/' + parkingSpots[0].id)
+            .send({name: 'Permanent spot', ownerEmail: user.email})
+            .expect(200);
+
+          await parkingSpots[0].reload();
+
+          await agent.get(`/api/parking-reservations?startDate=2019-01-01&endDate=2020-12-30`)
+            .expect(200, {
+              reservations: [{
+                date: '2019-11-04',
+                parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+                user: adminUser.toUserData()
+              }],
+              releases: [{
+                date: '2019-11-04',
+                parkingSpot: parkingSpots[0].toBasicParkingSpotData(),
+                reservation: {
+                  user: adminUser.toUserData()
+                }
+              }],
+            });
+        });
+
+        test('Should remove new owner\'s old reservations when spot was previously owned', async () => {
+          await agent.delete(
+            `/api/parking-reservations/parking-spot/${parkingSpots[1].id}?` +
+            'dates=2019-11-01,2019-11-02,2019-11-03'
+          );
+          // Reservations for new owner
+          await agent.post('/api/parking-reservations')
+            .send({
+              dates: ['2019-11-02', '2019-11-03'],
+              parkingSpotId: parkingSpots[1].id
+            });
+          // Change owner
+          await agent
+            .put('/api/parking-spots/' + parkingSpots[1].id)
+            .send({name: 'Permanent spot', ownerEmail: adminUser.email})
+            .expect(200);
+
+          await parkingSpots[1].reload();
+
+          await agent.get(`/api/parking-reservations?startDate=2019-01-01&endDate=2020-12-30`)
+            .expect(200, {
+              reservations: [],
+              releases: [],
+            });
+        });
       });
 
       describe('Error handling', () => {
