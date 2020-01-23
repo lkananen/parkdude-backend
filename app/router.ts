@@ -98,6 +98,7 @@ function createAuthRouter(): Router {
       failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
     }), (req, res) => {
       const sessionId = encodeURIComponent(req.cookies.sessionId);
+      req.session!.cookie!.maxAge = 1000 * 60 * 60 * 24 * 90; // 90 days
       if (req.session!.redirectUrl) {
         // Note: RedirectUrl param must be disabled or removed as this will otherwise cause serious security issues
         res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}`);

@@ -80,6 +80,9 @@ export function passwordLogin(req: Request, res: Response, next: NextFunction) {
         next(error);
         return;
       }
+      if (req.body.client === 'mobile') {
+        req.session!.cookie.maxAge = 1000 * 60 * 60 * 24 * 90; // 90 days
+      }
       const json: PasswordLoginResponse = {
         message: 'Login successful'
       };
