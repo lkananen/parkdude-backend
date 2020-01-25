@@ -571,6 +571,56 @@ describe('Parking spots (e2e)', () => {
               releases: [],
             });
         });
+
+
+        test('Should keep existing reservations and releases for other users', async () => {
+          const user2 = await User.create({email: 'tester2@example.com', name: 'Tester 2'}).save();
+          // Release spots for reservation
+          await agent.delete(
+            `/api/parking-reservations/parking-spot/${parkingSpots[1].id}?` +
+            'dates=2019-11-01,2019-11-02,2019-11-03'
+          );
+          // Reserve released spots from owned spot
+          await agent.post('/api/parking-reservations')
+            .send({
+              dates: ['2019-11-02', '2019-11-03'],
+              parkingSpotId: parkingSpots[1].id,
+              userId: user2.id
+            });
+          // Change owner
+          await agent
+            .put('/api/parking-spots/' + parkingSpots[1].id)
+            .send({name: 'Permanent spot', ownerEmail: adminUser.email})
+            .expect(200);
+
+          await parkingSpots[1].reload();
+
+          await agent.get(`/api/parking-reservations?startDate=2019-01-01&endDate=2020-12-30`)
+            .expect(200, {
+              reservations: [{
+                date: '2019-11-02',
+                parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+                user: user2.toUserData()
+              }, {
+                date: '2019-11-03',
+                parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+                user: user2.toUserData()
+              }],
+              releases: [{
+                date: '2019-11-02',
+                parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+                reservation: {
+                  user: user2.toUserData()
+                }
+              }, {
+                date: '2019-11-03',
+                parkingSpot: parkingSpots[1].toBasicParkingSpotData(),
+                reservation: {
+                  user: user2.toUserData()
+                }
+              }],
+            });
+        });
       });
 
       describe('Error handling', () => {
