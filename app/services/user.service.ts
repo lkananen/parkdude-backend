@@ -117,7 +117,9 @@ export async function getUserSession(user: User): Promise<UserSessions> {
 
 export async function clearSessions(user: UserSessions) {
   const sessionRepo = getConnection().getRepository(Session);
-  await sessionRepo.delete(user.sessions);
+  if (user.sessions.length > 0) {
+    await sessionRepo.delete(user.sessions);
+  }
 }
 
 export async function createPasswordVerifiedUser({name, email, password}: CreateUserBody) {
