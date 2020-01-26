@@ -56,13 +56,13 @@ export async function createApp(): Promise<Express> {
     secret: sessionSecret,
     name: 'sessionId',
     resave: false,
-    rolling: true, // refresh expiry counters on use
+    rolling: true, // refresh cookie and store ttl on use
     saveUninitialized: false,
-    cookie: {maxAge: 1000 * 60 * 60}, // 1 hour default expiration
+    cookie: {maxAge: 1000 * 60 * 60},
     store: new TypeormStore({
       cleanupLimit: 2,
       limitSubquery: true,
-      ttl: 60 * 60 * 24 * 90, // 90 days ttl in database if not used
+      ttl: (store, sess, sessionID) => sess.cookie.originalMaxAge / 1000 // default 1 hour in seconds
     }).connect(repository),
   }));
 
