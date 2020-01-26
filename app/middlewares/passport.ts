@@ -97,5 +97,8 @@ passport.serializeUser((user: User, done: (err: any, id: string) => void) => don
 // Deserialize user from the session cookie
 passport.deserializeUser(async (id: string, done: (err: any, user?: User) => void) => {
   const user = await User.findOne({id});
+  if (!user) {
+    done(new UnauthorizedError('User associated with session not found.'), undefined);
+  }
   done(null, user);
 });
