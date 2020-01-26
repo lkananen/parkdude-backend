@@ -99,6 +99,7 @@ passport.deserializeUser(async (id: string, done: (err: any, user?: User) => voi
   const user = await User.findOne({id});
   if (!user) {
     done(new UnauthorizedError('User associated with session not found.'), undefined);
+    return;
   }
   done(null, user);
 });
