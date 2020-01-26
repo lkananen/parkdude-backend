@@ -95,10 +95,10 @@ export function passwordLogin(req: Request, res: Response, next: NextFunction) {
 passport.serializeUser((user: User, done: (err: any, id: string) => void) => done(null, user.id));
 
 // Deserialize user from the session cookie
-passport.deserializeUser(async (id: string, done: (err: any, user?: User) => void) => {
+passport.deserializeUser(async (id: string, done: (err: any, user: User | false) => void) => {
   const user = await User.findOne({id});
   if (!user) {
-    done(new UnauthorizedError('User associated with session not found.'), undefined);
+    done(null, false);
     return;
   }
   done(null, user);
