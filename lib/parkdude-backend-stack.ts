@@ -160,7 +160,6 @@ export class ParkdudeBackendStack extends cdk.Stack {
     const frontendBucket = new Bucket(this, 'react-frontend-s3', {
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'index.html',
-      bucketName: 'parkdude',
       publicReadAccess: true
     });
 
