@@ -31,7 +31,8 @@ export class ParkdudeBackendStack extends cdk.Stack {
           cidrMask: 28,
           name: 'Parkdude-Database'
         }
-      ]
+      ],
+      natGateways: 1
     });
 
     const parkdudeVPCSecGroup = new ec2.SecurityGroup(this, 'ParkdudeVPCSecGroup', {
