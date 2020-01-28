@@ -89,7 +89,7 @@ function createAuthRouter(): Router {
       passport.authenticate('google-web',
         function(err, user, info) {
           if (err) {
-            res.redirect(process.env.WEB_LOGIN_FAILURE_REDIRECT!! + `?error=${err.message}`);
+            res.redirect(process.env.WEB_LOGIN_FAILURE_REDIRECT!! + `?error=${encodeURIComponent(err.message)}`);
             return;
           }
           req.logIn(user, function(err) {
