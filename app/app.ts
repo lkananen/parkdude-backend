@@ -51,7 +51,14 @@ export async function createApp(): Promise<Express> {
     resave: false,
     rolling: true, // refresh cookie and store ttl on use
     saveUninitialized: false,
-    cookie: {maxAge: 1000 * 60 * 60},
+    cookie: {
+      maxAge: 1000 * 60 * 60,
+      // Api gateway and frontend are on different domains
+      // Can likely be changed to true if they are moved behind same domain
+      // Set to none to prevent things from breaking in future
+      // (https://www.chromium.org/updates/same-site)
+      sameSite: 'none'
+    },
     store: new TypeormStore({
       cleanupLimit: 2,
       limitSubquery: true,
@@ -67,6 +74,13 @@ export async function createApp(): Promise<Express> {
     app.use(cors({
       origin: true,
       credentials: true
+    }));
+  } else {
+    // Production configuration
+    app.use(cors({
+      origin: process.env.FRONTEND_HOST,
+      credentials: true,
+      optionsSuccessStatus: 200
     }));
   }
 
