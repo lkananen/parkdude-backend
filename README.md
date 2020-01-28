@@ -1,4 +1,4 @@
-# ParkDude backend
+# Parkdude backend
 
 ## Project structure
 
@@ -139,9 +139,9 @@ TODO
 
 ## Slack integration
 
-ParkDude has two integrations with Slack. Slack webhooks are used to send notifications from ParkDude backend to Slack to display messages when reservations have been made or removed. Slack commands are used in Slack to get information on reservation status from backend. Setting the integration requires a small amount of manual work.
+Parkdude has two integrations with Slack. Slack webhooks are used to send notifications from Parkdude backend to Slack to display messages when reservations have been made or removed. Slack commands are used in Slack to get information on reservation status from backend. Setting the integration requires a small amount of manual work.
 
-1. Create new Slack application (https://api.slack.com/apps?new_app=1). Give it a name (e.g. `ParkDude`) and assign it to desired workspace.
+1. Create new Slack application (https://api.slack.com/apps?new_app=1). Give it a name (e.g. `Parkdude`) and assign it to desired workspace.
 2. `Add features and functionality` -> `Incoming Webhooks`.
 3. Enable webhooks and add a new webhook. Assign a channel for the webhook to which the notifications will come.
 4. Copy webhook url and add it to `SLACK_WEBHOOK_URL` in environment variable file (`env/app.prod.env` for production).
