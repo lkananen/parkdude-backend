@@ -43,17 +43,10 @@ export async function createApp(): Promise<Express> {
   app.use(express.json());
   app.use(cookieParser());
 
-  const sessionSecret = process.env.SESSION_SECRET;
-  if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
-    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set and changed.');
-  }
-
-  if (!process.env.COMPANY_EMAIL) {
-    throw new Error('Failed to read COMPANY_EMAIL environment variable. Make sure it is set.');
-  }
+  validateEnvironmentVariables();
 
   app.use(session({
-    secret: sessionSecret,
+    secret: process.env.SESSION_SECRET!!,
     name: 'sessionId',
     resave: false,
     rolling: true, // refresh cookie and store ttl on use
@@ -119,6 +112,22 @@ export async function createApp(): Promise<Express> {
   });
 
   return app;
+}
+
+function validateEnvironmentVariables() {
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret === 'CHANGE_THIS') {
+    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set and changed.');
+  }
+  if (!process.env.COMPANY_EMAIL) {
+    throw new Error('Failed to read COMPANY_EMAIL environment variable. Make sure it is set.');
+  }
+  if (!process.env.FRONTEND_HOST) {
+    throw new Error('Failed to read FRONTEND_HOST environment variable. Make sure it is set.');
+  }
+  if (!process.env.HOST) {
+    throw new Error('Failed to read HOST environment variable. Make sure it is set.');
+  }
 }
 
 function flatten<T>(arrays: T[][]): T[] {
