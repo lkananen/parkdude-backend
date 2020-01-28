@@ -84,35 +84,59 @@ function createAuthRouter(): Router {
   );
 
   router.get(
-    '/google/callback',
-    // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
-    passport.authenticate('google-web', {
-      successRedirect: process.env.WEB_LOGIN_SUCCESS_REDIRECT,
-      failureRedirect: process.env.WEB_LOGIN_FAILURE_REDIRECT
-    })
+    '/google/callback', function(req, res, next) {
+      // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
+      passport.authenticate('google-web',
+        function(err, user, info) {
+          if (err) {
+            res.redirect(process.env.WEB_LOGIN_FAILURE_REDIRECT!! + `?error=${err.message}`);
+            return;
+          }
+          req.logIn(user, function(err) {
+            if (err) {
+              next(err);
+              return;
+            }
+            res.redirect(process.env.WEB_LOGIN_SUCCESS_REDIRECT!!);
+          });
+        }
+      )(req, res, next);
+    }
   );
 
   router.get(
-    '/google/callback/mobile',
-    // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
-    passport.authenticate('google-mobile', {
-      failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
-    }), (req, res) => {
-      const sessionId = encodeURIComponent(req.cookies.sessionId);
-      req.session!.cookie.maxAge = 1000 * 60 * 60 * 24 * 90; // 90 days
-      const maxAge = req.session!.cookie.maxAge;
-      if (req.session!.redirectUrl) {
-        if (!(req.session!.redirectUrl.startsWith('parkdude://') ||
-          req.session!.redirectUrl.startsWith('https://auth.expo.io/'))) {
-          throw new BadRequestError(`Invalid, potentially unsafe redirectUrl (${req.session!.redirectUrl}) supplied.`);
+    '/google/callback/mobile', function(req, res, next) {
+      // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
+      passport.authenticate('google-mobile', {
+        failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
+      }, function(err, user, info) {
+        const redirectUrl = req.session?.redirectUrl;
+        if (!redirectUrl) {
+          next(new BadRequestError('Redirect url required.'));
+          return;
         }
-        res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}&maxAge=${maxAge}`);
-        req.session!.redirectUrl = undefined;
-      } else {
-        res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${sessionId}&maxAge=${maxAge}`);
-      }
-    }
-  );
+        if (!(redirectUrl.startsWith('parkdude://') || redirectUrl.startsWith('https://auth.expo.io/'))) {
+          next(new BadRequestError(`Invalid, potentially unsafe redirectUrl (${redirectUrl}) supplied.`));
+          return;
+        }
+        if (err) {
+          res.redirect(redirectUrl + `?error=${encodeURIComponent(err.message)}`);
+          return;
+        }
+
+        req.logIn(user, function(err) {
+          if (err) {
+            next(err);
+            return;
+          }
+          const sessionId = encodeURIComponent(req.cookies.sessionId);
+          req.session!.cookie.maxAge = 1000 * 60 * 60 * 24 * 90; // 90 days
+          const maxAge = req.session!.cookie.maxAge;
+          req.session!.redirectUrl = undefined;
+          res.redirect(redirectUrl + `?sessionId=${sessionId}&maxAge=${maxAge}`);
+        });
+      })(req, res, next);
+    });
 
   router.post('/login', passwordLogin);
 
