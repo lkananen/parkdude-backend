@@ -117,7 +117,8 @@ function createAuthRouter(): Router {
           next(new BadRequestError('Redirect url required.'));
           return;
         }
-        if (!(redirectUrl.startsWith('parkdude://') || redirectUrl.startsWith('https://auth.expo.io/'))) {
+        if (!(req.session!.redirectUrl.startsWith('parkdude://') ||
+          (process.env.NODE_ENV === 'development' && req.session!.redirectUrl.startsWith('exp://')))) {
           next(new BadRequestError(`Invalid, potentially unsafe redirectUrl (${redirectUrl}) supplied.`));
           return;
         }
