@@ -45,6 +45,8 @@ export async function createApp(): Promise<Express> {
 
   validateEnvironmentVariables();
 
+  const isLocalhost = process.env.HOST?.startsWith('http://localhost');
+
   app.use(session({
     secret: process.env.SESSION_SECRET!!,
     name: 'sessionId',
@@ -57,7 +59,8 @@ export async function createApp(): Promise<Express> {
       // Can likely be changed to true if they are moved behind same domain
       // Set to none to prevent things from breaking in future
       // (https://www.chromium.org/updates/same-site)
-      sameSite: 'none'
+      sameSite: isLocalhost ? false : 'none',
+      secure: isLocalhost ? false : true
     },
     store: new TypeormStore({
       cleanupLimit: 2,
