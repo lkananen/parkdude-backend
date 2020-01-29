@@ -11,7 +11,7 @@ import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {BadRequestError} from './utils/errors';
 import {
   getUsers, getUser, putUpdatedUser, deleteDeleteUser,
-  postClearSessions, putUserPassword, postUser, putMyUserPassword
+  postClearSessions, putUserPassword, postUser, putMyUserPassword, getInitialiseAdmin
 } from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations,
@@ -23,6 +23,7 @@ export function createRouter(): Router {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
+  router.get('/auth/initialise-admin', asyncWrapper(getInitialiseAdmin));
   router.post('/users', asyncWrapper(postUser));
 
   // All routes after this require login
