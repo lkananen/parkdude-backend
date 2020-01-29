@@ -103,7 +103,7 @@ function createAuthRouter(): Router {
       const maxAge = req.session!.cookie.maxAge;
       if (req.session!.redirectUrl) {
         if (!(req.session!.redirectUrl.startsWith('parkdude://') ||
-          req.session!.redirectUrl.startsWith('https://auth.expo.io/'))) {
+          (process.env.NODE_ENV === 'development' && req.session!.redirectUrl.startsWith('exp://')))) {
           throw new BadRequestError(`Invalid, potentially unsafe redirectUrl (${req.session!.redirectUrl}) supplied.`);
         }
         res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}&maxAge=${maxAge}`);
