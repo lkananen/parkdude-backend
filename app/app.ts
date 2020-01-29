@@ -45,8 +45,6 @@ export async function createApp(): Promise<Express> {
 
   validateEnvironmentVariables();
 
-  const isLocalhost = process.env.HOST?.startsWith('http://localhost');
-
   app.use(session({
     secret: process.env.SESSION_SECRET!!,
     name: 'sessionId',
@@ -55,12 +53,14 @@ export async function createApp(): Promise<Express> {
     saveUninitialized: false,
     cookie: {
       maxAge: 1000 * 60 * 60,
-      // Api gateway and frontend are on different domains
-      // Can likely be changed to true if they are moved behind same domain
-      // Set to none to prevent things from breaking in future
+      // Api gateway and frontend are on different domains, which is why
+      // these are disabled for now. Google login also seems to fail on iOS if these
+      // are active, since they are not supported in some older versions.
+      // Note: This might be required in the future due to browser changes
+      // A solution for non-compliant browsers will however be needed
       // (https://www.chromium.org/updates/same-site)
-      sameSite: isLocalhost ? false : 'none',
-      secure: isLocalhost ? false : true
+      // sameSite: 'none',
+      // secure: true
     },
     store: new TypeormStore({
       cleanupLimit: 2,
