@@ -6,7 +6,7 @@
   },
   "scripts": {
     "build": "webpack",
-    "watch": "tsc -w",
+    "watch": "webpack --watch",
     "dev": "nodemon --watch \"app/**/*.ts\" --ignore \"app/**/*.test.ts\" --ext ts,env --exec \"ts-node app/index.ts\"",
     "dev:serve": "ts-node app/index.ts",
     "test": "jest --runInBand",
@@ -17,7 +17,7 @@
     "cdk": "cdk",
     "synth": "cdk synth",
     "local-synth": "cdk synth --no-staging > template.yaml",
-    "sam-api": "cdk synth --no-staging > template.yaml && sam local start-api --docker-network=host",
+    "sam-api": "cdk synth --app \"npx ts-node bin/sam-backend.ts\" --no-staging > template.yaml && sam local start-api --docker-network=host",
     "typeorm": "ts-node ./node_modules/typeorm/cli.js",
     "typeorm:generate": "npm run typeorm migration:generate -- --dir app/migrations --config env/app.dev.env --name",
     "typeorm:show": "npm run typeorm migration:show -- --config env/app.dev.env",
