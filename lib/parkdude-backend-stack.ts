@@ -108,7 +108,7 @@ export class ParkdudeBackendStack extends cdk.Stack {
         ...lambdaEnvironmentVariables,
         ...databaseEnv
       },
-      timeout: Duration.seconds(10),
+      timeout: Duration.seconds(20),
       vpc: parkdudeVpc,
       vpcSubnets: parkdudeVpc.selectSubnets({
         subnetType: SubnetType.PRIVATE
