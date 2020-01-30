@@ -80,6 +80,9 @@ export function passwordLogin(req: Request, res: Response, next: NextFunction) {
         next(error);
         return;
       }
+      if (req.body.client === 'mobile') {
+        req.session!.cookie.maxAge = 1000 * 60 * 60 * 24 * 90; // 90 days
+      }
       const json: PasswordLoginResponse = {
         message: 'Login successful'
       };
@@ -92,7 +95,11 @@ export function passwordLogin(req: Request, res: Response, next: NextFunction) {
 passport.serializeUser((user: User, done: (err: any, id: string) => void) => done(null, user.id));
 
 // Deserialize user from the session cookie
-passport.deserializeUser(async (id: string, done: (err: any, user?: User) => void) => {
+passport.deserializeUser(async (id: string, done: (err: any, user: User | false) => void) => {
   const user = await User.findOne({id});
+  if (!user) {
+    done(null, false);
+    return;
+  }
   done(null, user);
 });

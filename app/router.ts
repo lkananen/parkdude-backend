@@ -8,6 +8,7 @@ import {asyncWrapper} from './middlewares/async-wrapper.middleware';
 import {User} from './entities/user';
 import {passport, passwordLogin} from './middlewares/passport';
 import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
+import {BadRequestError} from './utils/errors';
 import {
   getUsers, getUser, putUpdatedUser, deleteDeleteUser,
   postClearSessions, putUserPassword, postUser, putMyUserPassword
@@ -98,12 +99,17 @@ function createAuthRouter(): Router {
       failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
     }), (req, res) => {
       const sessionId = encodeURIComponent(req.cookies.sessionId);
+      req.session!.cookie.maxAge = 1000 * 60 * 60 * 24 * 90; // 90 days
+      const maxAge = req.session!.cookie.maxAge;
       if (req.session!.redirectUrl) {
-        // Note: RedirectUrl param must be disabled or removed as this will otherwise cause serious security issues
-        res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}`);
+        if (!(req.session!.redirectUrl.startsWith('parkdude://') ||
+          (process.env.NODE_ENV === 'development' && req.session!.redirectUrl.startsWith('exp://')))) {
+          throw new BadRequestError(`Invalid, potentially unsafe redirectUrl (${req.session!.redirectUrl}) supplied.`);
+        }
+        res.redirect(req.session!.redirectUrl + `?sessionId=${sessionId}&maxAge=${maxAge}`);
         req.session!.redirectUrl = undefined;
       } else {
-        res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${sessionId}`);
+        res.redirect(process.env.MOBILE_LOGIN_SUCCESS_REDIRECT! + `?sessionId=${sessionId}&maxAge=${maxAge}`);
       }
     }
   );

@@ -9,7 +9,7 @@ import {CreateUserBody, PostUserResponse, PutUserPasswordBody} from '../interfac
 import {BadRequestError, ForbiddenError} from '../utils/errors';
 import {
   fetchUsers, fetchUser, updateUser, deleteUser,
-  clearSessions, getUserSession, getUsersSessions,
+  clearSessions, getUserSessions, getUsersSessions,
   createPasswordVerifiedUser, changePassword, getPassword, passwordsMatch
 } from '../services/user.service';
 
@@ -28,7 +28,7 @@ export async function getUsers(req: Request, res: Response) {
 export async function getUser(req: Request, res: Response) {
   const userId = req.params.userId;
   const user = await fetchUser(userId);
-  const userSessions = await getUserSession(user);
+  const userSessions = await getUserSessions(user);
   const json: GetUserResponse = {
     data: {...await user.toFullUserData(), sessions: userSessions.sessions}
   };
@@ -105,7 +105,7 @@ export async function putUserPassword(req: Request, res: Response) {
 export async function postClearSessions(req: Request, res: Response) {
   const userId = req.params.userId;
   const user = await fetchUser(userId);
-  const userSessions = await getUserSession(user);
+  const userSessions = await getUserSessions(user);
   await clearSessions(userSessions);
 
   const json: GenericResponse = {

@@ -81,6 +81,8 @@ export async function changePassword(user: User, password: string) {
 }
 
 export async function deleteUser(user: User) {
+  const sessions = await getUserSessions(user);
+  await clearSessions(sessions);
   await user.remove();
 }
 
@@ -111,13 +113,15 @@ export async function getUsersSessions(users: User[]): Promise<UserSessions[]> {
   return userSessions;
 }
 
-export async function getUserSession(user: User): Promise<UserSessions> {
+export async function getUserSessions(user: User): Promise<UserSessions> {
   return (await getUsersSessions(Array(user)))[0];
 }
 
 export async function clearSessions(user: UserSessions) {
   const sessionRepo = getConnection().getRepository(Session);
-  await sessionRepo.delete(user.sessions);
+  if (user.sessions.length > 0) {
+    await sessionRepo.delete(user.sessions);
+  }
 }
 
 export async function createPasswordVerifiedUser({name, email, password}: CreateUserBody) {
