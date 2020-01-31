@@ -35,7 +35,6 @@ async function googleLoginCallback(accessToken: string, refreshToken: string, pr
     const user = await getOrCreateUser({email, name: profile.displayName});
     done(null, user);
   } catch (error) {
-    // TODO: Verify that this works as expected
     done(error, null);
   }
 }
