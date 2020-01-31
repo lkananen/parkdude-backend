@@ -5,6 +5,7 @@ import {getManager} from 'typeorm';
 import {DayReservation} from '../entities/day-reservation';
 import {DayRelease} from '../entities/day-release';
 import {ConflictError} from '../utils/errors';
+import {resetReleasesForNewOwner} from './parking-reservation.service';
 
 export async function fetchParkingSpots(availableOnDates?: string[]): Promise<ParkingSpot[]> {
   if (!availableOnDates) {
@@ -55,6 +56,11 @@ export async function createParkingSpot({name, ownerEmail}: ParkingSpotBody): Pr
 export async function updateParkingSpot(id: string, {name, ownerEmail}: ParkingSpotBody) {
   const owner = await getOwner(ownerEmail);
   const parkingSpot = await ParkingSpot.findOneOrFail({id});
+
+  if (owner?.id != parkingSpot.ownerId) {
+    await resetReleasesForNewOwner(parkingSpot, owner);
+  }
+
   parkingSpot.name = name;
   parkingSpot.owner = owner;
   return await parkingSpot.save();
