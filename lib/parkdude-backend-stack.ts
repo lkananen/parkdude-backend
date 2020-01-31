@@ -31,13 +31,13 @@ export class ParkdudeBackendStack extends cdk.Stack {
           cidrMask: 28,
           name: 'Parkdude-Database'
         }
-      ]
+      ],
+      natGateways: 1
     });
 
     const parkdudeVPCSecGroup = new ec2.SecurityGroup(this, 'ParkdudeVPCSecGroup', {
       vpc: parkdudeVpc,
-      // Temporarily allowing all traffic outside until more specific rules are created
-      allowAllOutbound: true // FIX ME!
+      allowAllOutbound: false
     });
 
     parkdudeVPCSecGroup.addIngressRule(
@@ -50,6 +50,18 @@ export class ParkdudeBackendStack extends cdk.Stack {
       ec2.Peer.ipv4('10.0.0.0/24'), // CIDR block for local VPC traffic
       ec2.Port.tcp(5432),
       'PostgreSQL default outbound port'
+    );
+
+    parkdudeVPCSecGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'HTTPS default outbound port for Lambda'
+    );
+
+    parkdudeVPCSecGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(80),
+      'HTTP default outbound port for Lambda'
     );
 
     // Automatically creates a password for database.

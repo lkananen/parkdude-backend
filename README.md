@@ -88,10 +88,10 @@ First time deployment:
 3. First time setup needs to create CDKToolkit as a CloudFormation stack. This can be done using `cdk bootstrap aws://${numeric-identifier}/eu-north-1`. The \${numeric-identifier} is the AWS Account identifier that can be found on the AWS console's IAM page in format 012345678912.
 4. Deploy the code to AWS using: `npm run aws-deploy`.
 
-Updating changes to excisting stack:
+Updating changes to existing stack:
 
 1. Compile the code: `npm run build`.
-2. Re-generate the CloudFormation template code: `npm run synth`.
+2. Re-generate the CloudFormation template code if there are AWS stack changes: `npm run synth`.
 3. Deploy changes: `npm run aws-deploy`.
 
 ## Database migrations
@@ -153,5 +153,3 @@ ParkDude has two integrations with Slack. Slack webhooks are used to send notifi
 10. Redeploy Lambda for changes to take effect.
 
 If there ever comes a need to reset the signing secret, it can be done in the App Credentials section. The environment variable for lambda needs to be updated accordingly.
-
-
