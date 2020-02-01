@@ -197,8 +197,8 @@ export async function reserveSpots(
     ...await DayReservation.findByIds(reservationIds),
     ...removedReleases
   ];
-    // Sorting done here because there are two separate queries
-    // The number of results is not expected to be large.
+  // Sorting done here because there are two separate queries
+  // The number of results is not expected to be large.
   reservationsAndDeletedReleases.sort((a, b) => a.date < b.date ? -1 : 1);
   // Fail silently to not show user the error message
   await sendReservationSlackNotification(reservationsAndDeletedReleases, user).catch(() => {});
