@@ -10,7 +10,8 @@ import {BadRequestError, ForbiddenError} from '../utils/errors';
 import {
   fetchUsers, fetchUser, updateUser, deleteUser,
   clearSessions, getUserSessions, getUsersSessions,
-  createPasswordVerifiedUser, changePassword, getPassword, passwordsMatch
+  createPasswordVerifiedUser, changePassword, getPassword, passwordsMatch,
+  initialiseAdmin
 } from '../services/user.service';
 
 export async function getUsers(req: Request, res: Response) {
@@ -112,4 +113,19 @@ export async function postClearSessions(req: Request, res: Response) {
     message: 'User\'s session cleared'
   };
   res.status(200).json(json);
+}
+
+/**
+ * Creates new admin based on env variables if database does not have any
+ * admins. Is used when database is just created and there aren't yet anyone
+ * with permissions to create admins.
+ * Note: This uses GET to make initialisation easier via browser.
+ * It also is used only once and can't be used again, so it should be okay.
+ */
+export async function getInitialiseAdmin(req: Request, res: Response) {
+  await initialiseAdmin();
+  res.json({
+    message: 'Root admin initialised successfully. ' +
+    'Use this admin to create your first admin user, and delete this user after that.'
+  });
 }

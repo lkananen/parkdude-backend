@@ -1,4 +1,20 @@
-# ParkDude backend
+# Parkdude backend
+
+- [Parkdude backend](#parkdude-backend)
+  - [Project structure](#project-structure)
+  - [How to run (development)](#how-to-run-development)
+    - [Common prerequisites](#common-prerequisites)
+      - [Local database setup](#local-database-setup)
+    - [Method 1: Local express server](#method-1-local-express-server)
+    - [Method 2: Local API gateway with SAM](#method-2-local-api-gateway-with-sam)
+    - [Method 3: Deploy to AWS](#method-3-deploy-to-aws)
+  - [Database migrations](#database-migrations)
+  - [Testing](#testing)
+  - [Linter](#linter)
+  - [Admin user configuration](#admin-user-configuration)
+  - [Slack integration](#slack-integration)
+  - [Google login configuration](#google-login-configuration)
+  - [Production deployment](#production-deployment)
 
 ## Project structure
 
@@ -29,7 +45,12 @@ There are three possible ways to run development environment: with local express
 - PostgreSQL database (instructions below)
 - Copy file `env/app.dev.example.env` as `env/app.dev.env` and modify if necessary.
 - Copy file `env/app.sam-dev.example.env` as `env/app.sam-dev.env` and modify if necessary.
+- Copy file `env/app.prod.example.env` as `env/app.prod.env` and modify if necessary.
 - Copy file `env/app.test.example.env` as `env/app.test.env` and modify if necessary.
+- Optional: Configure [Slack integration](#slack-integration)
+- Optional: Configure [Google login configuration](#google-login-configuration)
+
+#### Local database setup
 
 There are many ways to set up the database, but one of the easiest ways is docker.
 
@@ -48,7 +69,7 @@ If you use a different database configuration, make sure to change `env/app.dev.
 
 ### Method 1: Local express server
 
-Easiest way to run REST API is to run it as a normal Express server. Do note that this does not work exactly the same as it would with lambdas and API gateway. With this approach it's more important to make sure that application does not rely on any internal state.
+Easiest way to run REST API is to run it as a normal Express server. Do note that this does not work exactly the same as it would with lambdas and API gateway. With this approach it's more important to make sure that application does not rely on any internal state. In production new Express "app" might be created for each request.
 
 Development:
 
@@ -70,6 +91,9 @@ Development:
 2. `npm run sam-api` (generates template.yaml and launches REST API at http://localhost:3000/api)
 
 As long as `watch` and `sam-api` are active, all code changes are applied immediately.
+
+Note that CORS might not work correctly on some versions of SAM cli.
+This might make it not suitable to be tested with frontend.
 
 ### Method 3: Deploy to AWS
 
@@ -133,15 +157,19 @@ The rules are somewhat strict (based on Google's ruleset with some modifications
 
 Linting can be run for all files with `npm run lint`.
 
-## Production deployment
+## Admin user configuration
 
-TODO
+Database does not have any admin users by default.
+To create the first admin, launch the backend and go to `/api/auth/initialise-admin`.
+This will create the admin from credentials provided to environment file.
+This only works if no other admins exist in the system.
+It is recommended to remove this admin once first "real" admin users have been created.
 
 ## Slack integration
 
-ParkDude has two integrations with Slack. Slack webhooks are used to send notifications from ParkDude backend to Slack to display messages when reservations have been made or removed. Slack commands are used in Slack to get information on reservation status from backend. Setting the integration requires a small amount of manual work.
+Parkdude has two integrations with Slack. Slack webhooks are used to send notifications from Parkdude backend to Slack to display messages when reservations have been made or removed. Slack commands are used in Slack to get information on reservation status from backend. Setting the integration requires a small amount of manual work.
 
-1. Create new Slack application (https://api.slack.com/apps?new_app=1). Give it a name (e.g. `ParkDude`) and assign it to desired workspace.
+1. Create new Slack application (https://api.slack.com/apps?new_app=1). Give it a name (e.g. `Parkdude`) and assign it to desired workspace.
 2. `Add features and functionality` -> `Incoming Webhooks`.
 3. Enable webhooks and add a new webhook. Assign a channel for the webhook to which the notifications will come.
 4. Copy webhook url and add it to `SLACK_WEBHOOK_URL` in environment variable file (`env/app.prod.env` for production).
@@ -153,3 +181,33 @@ ParkDude has two integrations with Slack. Slack webhooks are used to send notifi
 10. Redeploy Lambda for changes to take effect.
 
 If there ever comes a need to reset the signing secret, it can be done in the App Credentials section. The environment variable for lambda needs to be updated accordingly.
+
+## Google login configuration
+
+Google OAuth credentials are needed for Google login to work.
+
+1. Create new project in Google developer console (https://console.developers.google.com/projectcreate)
+2. In [Credentials](https://console.developers.google.com/apis/credentials) -> "Create credentials" -> "OAuth client ID".
+3. Select "Web application"
+4. For authorised origins add host of the backend. For AWS this can be done after first deployment, if custom domain is not configured. For local development `http://localhost:3000` can also be added.
+5. For redirect URIs add the paths below. Localhost paths can also be optionally added for local usage. Note: For autogenerated domains `/prod` must be as part of `HOST`. These can be modified later if needed.
+   - HOST + `/api/auth/google/callback`
+   - HOST + `/api/auth/google/callback/mobile`
+6. Client id and secret are provided. Copy these and add to environment file(s).
+7. Test that Google login works both in web and mobile clients.
+
+## Production deployment
+
+Start by going through sections [Common prerequisites](#common-prerequisites) and [Method 3: Deploy to AWS](#method-3-deploy-to-aws).
+
+One part that must be done in early parts of the deployment is setting up environment variables in `env/app.prod.env`, a template from which can be copied from `env/app.prod.example.env`. The file has some hints on what should be put there.
+
+Note that deployment needs to be done in multiple parts, since HOST is only known after first deployment.
+
+Frontend is not deployed automatically. Quick instructions on that:
+
+1. Go to frontend repository, and configure environment variables to point to the backend.
+2. Run build in the repository (`npm install`, `npm run build`)
+3. Go to AWS console, find the bucket and copy the contents of `build` directory to the bucket. The content should go to the root, so that `build` directory itself is not copied.
+
+If frontend uses a custom domain, it should be configured in `FRONTEND_HOST` environment variable.

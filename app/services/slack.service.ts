@@ -23,7 +23,7 @@ export const sendSlackMessage = async function sendSlackMessage(message: string)
     throw new Error('Slack webhook not defined.');
   }
   await axios.default.post(process.env.SLACK_WEBHOOK_URL, {
-    'username': 'ParkDude',
+    'username': 'Parkdude',
     'text': message,
     'icon_emoji': ':parking:'
   })

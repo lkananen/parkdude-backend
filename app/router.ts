@@ -11,7 +11,7 @@ import {adminRoleRequired, loginRequired} from './middlewares/auth.middleware';
 import {BadRequestError} from './utils/errors';
 import {
   getUsers, getUser, putUpdatedUser, deleteDeleteUser,
-  postClearSessions, putUserPassword, postUser, putMyUserPassword
+  postClearSessions, putUserPassword, postUser, putMyUserPassword, getInitialiseAdmin
 } from './controllers/user.controller';
 import {
   getReservationsCalendar, postReservations,
@@ -23,6 +23,7 @@ export function createRouter(): Router {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
+  router.get('/auth/initialise-admin', asyncWrapper(getInitialiseAdmin));
   router.post('/users', asyncWrapper(postUser));
 
   // All routes after this require login
@@ -59,8 +60,7 @@ function createAuthRouter(): Router {
   const router = Router();
 
   router.use((req, res, next) => {
-    // Fixed redirect url should be configured for production
-    if (process.env.NODE_ENV === 'development' && req.query.redirectUrl) {
+    if (req.query.redirectUrl) {
       req.session!.redirectUrl = req.query.redirectUrl;
     }
     next();
@@ -88,8 +88,12 @@ function createAuthRouter(): Router {
       // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
       passport.authenticate('google-web',
         function(err, user, info) {
+          const host = process.env.FRONTEND_HOST;
           if (err) {
-            res.redirect(process.env.WEB_LOGIN_FAILURE_REDIRECT!! + `?error=${encodeURIComponent(err.message)}`);
+            res.redirect(
+              host + process.env.WEB_LOGIN_FAILURE_REDIRECT_PATH!! +
+              `?error=${encodeURIComponent(err.message)}`
+            );
             return;
           }
           req.logIn(user, function(err) {
@@ -97,7 +101,7 @@ function createAuthRouter(): Router {
               next(err);
               return;
             }
-            res.redirect(process.env.WEB_LOGIN_SUCCESS_REDIRECT!!);
+            res.redirect(host + process.env.WEB_LOGIN_SUCCESS_REDIRECT_PATH!!);
           });
         }
       )(req, res, next);
@@ -107,9 +111,7 @@ function createAuthRouter(): Router {
   router.get(
     '/google/callback/mobile', function(req, res, next) {
       // Authenticate with passport. Jump back to Google strategy where user is fetched/created.
-      passport.authenticate('google-mobile', {
-        failureRedirect: process.env.MOBILE_LOGIN_FAILURE_REDIRECT
-      }, function(err, user, info) {
+      passport.authenticate('google-mobile', function(err, user, info) {
         const redirectUrl = req.session?.redirectUrl;
         if (!redirectUrl) {
           next(new BadRequestError('Redirect url required.'));

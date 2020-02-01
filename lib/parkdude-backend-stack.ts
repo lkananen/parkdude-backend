@@ -98,12 +98,17 @@ export class ParkdudeBackendStack extends cdk.Stack {
       displayName: 'Subscription topic for longer Slack command lambdas'
     });
 
+    const lambdaEnvironmentVariables = this.getLambdaEnvironmentVariables();
+
     const restApiHandler = new lambda.Function(this, 'RestApiHandler', {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: lambda.Code.asset('./build/handlers/rest-api'),
       handler: 'lambda.handler',
-      environment: {...this.getLambdaEnvironmentVariables(), ...databaseEnv},
-      timeout: Duration.seconds(10),
+      environment: {
+        ...lambdaEnvironmentVariables,
+        ...databaseEnv
+      },
+      timeout: Duration.seconds(20),
       vpc: parkdudeVpc,
       vpcSubnets: parkdudeVpc.selectSubnets({
         subnetType: SubnetType.PRIVATE
@@ -152,16 +157,19 @@ export class ParkdudeBackendStack extends cdk.Stack {
     asyncSlackCommandsTopic.addSubscription(new LambdaSubscription(asyncSlackBotHandler));
     asyncSlackCommandsTopic.grantPublish(slackBotHandler);
 
-    new Bucket(this, 'react-frontend-s3', {
+    const frontendBucket = new Bucket(this, 'react-frontend-s3', {
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'index.html',
-      bucketName: 'parkdude',
       publicReadAccess: true
     });
+
+    if (!lambdaEnvironmentVariables.FRONTEND_HOST) {
+      // If custom domain is configured, FRONTEND_HOST should be set in env file
+      restApiHandler.addEnvironment('FRONTEND_HOST', frontendBucket.bucketWebsiteUrl);
+    }
   }
 
   private getLambdaEnvironmentVariables(): dotenv.DotenvParseOutput {
-    // TODO: Handle different environments
     return dotenv.parse(fs.readFileSync(path.join(__dirname, '../env/app.prod.env')));
   }
 }

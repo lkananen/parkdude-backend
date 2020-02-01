@@ -43,22 +43,25 @@ export async function createApp(): Promise<Express> {
   app.use(express.json());
   app.use(cookieParser());
 
-  const sessionSecret = process.env.SESSION_SECRET;
-  if (sessionSecret === undefined || sessionSecret === 'CHANGE_THIS') {
-    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set and changed.');
-  }
-
-  if (!process.env.COMPANY_EMAIL) {
-    throw new Error('Failed to read COMPANY_EMAIL environment variable. Make sure it is set.');
-  }
+  validateEnvironmentVariables();
 
   app.use(session({
-    secret: sessionSecret,
+    secret: process.env.SESSION_SECRET!!,
     name: 'sessionId',
     resave: false,
     rolling: true, // refresh cookie and store ttl on use
     saveUninitialized: false,
-    cookie: {maxAge: 1000 * 60 * 60},
+    cookie: {
+      maxAge: 1000 * 60 * 60,
+      // Api gateway and frontend are on different domains, which is why
+      // these are disabled for now. Google login also seems to fail on iOS if these
+      // are active, since they are not supported in some older versions.
+      // Note: This might be required in the future due to browser changes
+      // A solution for non-compliant browsers will however be needed
+      // (https://www.chromium.org/updates/same-site)
+      // sameSite: 'none',
+      // secure: true
+    },
     store: new TypeormStore({
       cleanupLimit: 2,
       limitSubquery: true,
@@ -74,6 +77,13 @@ export async function createApp(): Promise<Express> {
     app.use(cors({
       origin: true,
       credentials: true
+    }));
+  } else {
+    // Production configuration
+    app.use(cors({
+      origin: process.env.FRONTEND_HOST,
+      credentials: true,
+      optionsSuccessStatus: 200
     }));
   }
 
@@ -119,6 +129,22 @@ export async function createApp(): Promise<Express> {
   });
 
   return app;
+}
+
+function validateEnvironmentVariables() {
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret === 'CHANGE_THIS') {
+    throw new Error('Failed to read SESSION_SECRET environment variable. Make sure it is set and changed.');
+  }
+  if (!process.env.COMPANY_EMAIL) {
+    throw new Error('Failed to read COMPANY_EMAIL environment variable. Make sure it is set.');
+  }
+  if (!process.env.FRONTEND_HOST) {
+    throw new Error('Failed to read FRONTEND_HOST environment variable. Make sure it is set.');
+  }
+  if (!process.env.HOST) {
+    throw new Error('Failed to read HOST environment variable. Make sure it is set.');
+  }
 }
 
 function flatten<T>(arrays: T[][]): T[] {

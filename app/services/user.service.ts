@@ -169,3 +169,27 @@ function validatePassword(password: string) {
 function isCompanyEmail(email: string) {
   return email.endsWith(process.env.COMPANY_EMAIL!);
 }
+
+/**
+ * Used to initialise the first admin in the database.
+ */
+export async function initialiseAdmin() {
+  const admins = await User.count({
+    where: {
+      role: UserRole.ADMIN
+    }
+  });
+  if (admins > 0) {
+    throw new BadRequestError('System already has admins. Initialisation denied.');
+  }
+  if (!process.env.ROOT_EMAIL || !process.env.ROOT_PASSWORD) {
+    throw new BadRequestError('Root email and password must be configured in environment variables.');
+  }
+  const admin = await createPasswordVerifiedUser({
+    name: 'Admin',
+    email: process.env.ROOT_EMAIL,
+    password: process.env.ROOT_PASSWORD
+  });
+  admin.role = UserRole.ADMIN;
+  await admin.save();
+}
