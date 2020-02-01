@@ -7,7 +7,7 @@ import {User} from '../entities/user';
 import {
   CalendarEntry, Calendar, ParkingSpotDayStatus, QueriedParkingSpotDayStatus
 } from '../interfaces/parking-reservation.interfaces';
-import {ReservationFailedError, ReleaseFailedError} from '../utils/errors';
+import {ReservationFailedError, ReleaseFailedError, NotFoundError} from '../utils/errors';
 import {sendReservationSlackNotification, sendReleaseSlackNotification} from './slack.service';
 
 // Always true if condition to simplify conditional where queries
@@ -185,6 +185,28 @@ export async function fetchReleases(startDate: string, endDate: string, user?: U
 export async function reserveSpots(
   dates: string[], user: User, parkingSpotId?: string
 ): Promise<(DayReservation|DayRelease)[]> {
+  const spot = parkingSpotId ? await ParkingSpot.findOne(parkingSpotId) : null;
+  if (parkingSpotId && !spot) {
+    throw new NotFoundError('Parking spot does not exist. It might have been removed.');
+  }
+
+  const {reservationIds, removedReleases} = await reserveSpotsTransaction(dates, user, parkingSpotId);
+
+  // Reservations must be fetched again to get full information
+  const reservationsAndDeletedReleases = [
+    ...await DayReservation.findByIds(reservationIds),
+    ...removedReleases
+  ];
+    // Sorting done here because there are two separate queries
+    // The number of results is not expected to be large.
+  reservationsAndDeletedReleases.sort((a, b) => a.date < b.date ? -1 : 1);
+  // Fail silently to not show user the error message
+  await sendReservationSlackNotification(reservationsAndDeletedReleases, user).catch(() => {});
+
+  return reservationsAndDeletedReleases;
+}
+
+async function reserveSpotsTransaction(dates: string[], user: User, parkingSpotId?: string) {
   return await getConnection().transaction(async (transactionManager) => {
     // Get reservation/release information for each day
     // Note: slightly less safe query generation,
@@ -252,17 +274,7 @@ export async function reserveSpots(
       }));
     const reservationIds = (await transactionManager.save(reservations)).map((reservation) => reservation.id);
 
-    // Reservations must be fetched again to get full information
-    const reservationsAndDeletedReleases = [
-      ...await transactionManager.getRepository(DayReservation).findByIds(reservationIds),
-      ...removedReleases
-    ];
-    // Sorting done here because there are two separate queries
-    // The number of results is not expected to be large.
-    reservationsAndDeletedReleases.sort((a, b) => a.date < b.date ? -1 : 1);
-    await sendReservationSlackNotification(reservationsAndDeletedReleases, user).catch(() => {});
-
-    return reservationsAndDeletedReleases;
+    return {reservationIds, removedReleases};
   });
 }
 
@@ -344,8 +356,19 @@ function getAvailabilityByDate(
 }
 
 export async function releaseSpots(dates: string[], user: User, parkingSpotId: string) {
+  const spot = await ParkingSpot.findOne(parkingSpotId);
+  if (!spot) {
+    throw new NotFoundError('Parking spot does not exist. It might have been removed.');
+  }
+  const spotStatuses = await releaseSpotsTransaction(dates, user, parkingSpotId);
+  spotStatuses.sort(({date: date1}, {date: date2}) => date1! < date2! ? 1 : -1);
+
+  // Fail silently to not show user the error message
+  await sendReleaseSlackNotification(spotStatuses, spot).catch(() => {});
+}
+
+async function releaseSpotsTransaction(dates: string[], user: User, parkingSpotId: string) {
   return await getConnection().transaction(async (transactionManager) => {
-    const spot = await transactionManager.getRepository(ParkingSpot).findOneOrFail(parkingSpotId);
     const spotStatuses: ParkingSpotDayStatus[] = await transactionManager.createQueryBuilder(ParkingSpot, 'spot')
       .leftJoin(`(values (date '${dates.join('\'),(date \'')}'))`, 'spotDate', '1=1')
       .leftJoin(
@@ -376,9 +399,6 @@ export async function releaseSpots(dates: string[], user: User, parkingSpotId: s
       })));
     validateReleases(spotStatuses, user);
 
-    // Sort for error response purposes
-    spotStatuses.sort(({date: date1}, {date: date2}) => date1! < date2! ? 1 : -1);
-
     const reservationIdsToCancel = getReservationIdsToCancel(spotStatuses);
     const releasesToAdd = getReleasesToAdd(spotStatuses);
 
@@ -388,9 +408,7 @@ export async function releaseSpots(dates: string[], user: User, parkingSpotId: s
     if (releasesToAdd.length) {
       await transactionManager.save(releasesToAdd);
     }
-
-    // Fail silently to not show user the error message
-    await sendReleaseSlackNotification(spotStatuses, spot).catch(() => {});
+    return spotStatuses;
   });
 }
 
