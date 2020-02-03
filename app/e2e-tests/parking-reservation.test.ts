@@ -2154,6 +2154,15 @@ describe('Parking reservations (e2e)', () => {
           })
           .expect(400, {message: 'Dates must be in format YYYY-MM-DD.'});
       });
+
+      test('Should give 404 if parking spot does not exist', async () => {
+        await agent.post('/api/parking-reservations')
+          .send({
+            dates: ['2019-11-01'],
+            parkingSpotId: '5e744477-c573-4856-9947-ec2500c7c0e2'
+          })
+          .expect(404, {message: 'Parking spot does not exist. It might have been removed.'});
+      });
     });
   });
 
@@ -2542,7 +2551,7 @@ describe('Parking reservations (e2e)', () => {
         await agent.delete(
           '/api/parking-reservations/parking-spot/5e744477-c573-4856-9947-ec2500c7c0e2?dates=2019-11-01'
         )
-          .expect(404, {message: 'Entity not found.'});
+          .expect(404, {message: 'Parking spot does not exist. It might have been removed.'});
       });
     });
   });

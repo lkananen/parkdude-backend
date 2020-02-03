@@ -22,6 +22,12 @@ export class ForbiddenError extends StatusError {
   }
 }
 
+export class NotFoundError extends StatusError {
+  constructor(message = 'Not found.') {
+    super(message, 404);
+  }
+}
+
 export class ReservationFailedError extends Error {
   constructor(message: string, public dates: string[]) {
     super(message);
