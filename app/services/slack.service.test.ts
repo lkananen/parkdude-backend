@@ -18,9 +18,9 @@ describe('Slack service', () => {
                        '> Gives list of all available parking spots for a given day. Defaults to current day.' +
                        ' Date can be given in format `dd.mm.yyyy` or `dd.mm`.\n' +
                        '> Example usages:\n' +
-                       '> - `/parkdude status`\n' +
-                       '> - `/parkdude status 30.11.2019`\n' +
-                       '> - `/parkdude status 30.11`\n';
+                       '> • `/parkdude status`\n' +
+                       '> • `/parkdude status 30.11.2019`\n' +
+                       '> • `/parkdude status 30.11`\n';
 
       test('Should return help text', async () => {
         const input = 'help';
