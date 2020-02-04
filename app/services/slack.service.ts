@@ -120,12 +120,12 @@ function getReleaseRanges(releases: ParkingSpotDayStatus[], spot: ParkingSpot) {
 }
 
 function getReservationMessage({startDate, endDate, spotName}: ReservationRange) {
-  return `- Parking spot ${spotName}: ${formatDateRange(startDate, endDate)}`;
+  return `• Parking spot ${spotName}: ${formatDateRange(startDate, endDate)}`;
 }
 
 function getReleaseMessage(range: ReservationRange, includeParkingSpot: boolean) {
   if (!includeParkingSpot) {
-    return '- ' + formatDateRange(range.startDate, range.endDate);
+    return '• ' + formatDateRange(range.startDate, range.endDate);
   }
   return getReservationMessage(range);
 }
@@ -203,9 +203,9 @@ function createHelpTextResponse() {
             '> Gives list of all available parking spots for a given day. Defaults to current day.' +
             ' Date can be given in format `dd.mm.yyyy` or `dd.mm`.\n' +
             '> Example usages:\n' +
-            '> - `/parkdude status`\n' +
-            '> - `/parkdude status 30.11.2019`\n' +
-            '> - `/parkdude status 30.11`\n'
+            '> • `/parkdude status`\n' +
+            '> • `/parkdude status 30.11.2019`\n' +
+            '> • `/parkdude status 30.11`\n'
   };
 }
 
