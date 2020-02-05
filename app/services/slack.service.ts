@@ -224,6 +224,13 @@ async function createStatusCommandResponse(dateInput?: string) {
   const totalParkingSpots = await fetchParkingSpotCount();
   const parkingSpots = await fetchParkingSpots([dateString]);
   const parkingSpotList = parkingSpots.map((spot) => '• ' + spot.name).join('\n');
+  if (parkingSpots.length === 0) {
+    return {
+      'response_type': 'in_channel',
+      'text': `${parkingSpots.length} / ${totalParkingSpots} parking spots are available ` +
+              `on ${formatDate(dateString)}.`
+    };
+  }
   return {
     'response_type': 'in_channel',
     'text': `${parkingSpots.length} / ${totalParkingSpots} parking spots are available ` +

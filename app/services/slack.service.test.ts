@@ -114,6 +114,31 @@ describe('Slack service', () => {
         });
       });
 
+      test('Should handle situation without available spots on specific date', async () => {
+        await DayReservation.create({
+          spot: parkingSpots[0],
+          user: user,
+          date: '2019-12-21'
+        }).save();
+        await DayReservation.create({
+          spot: parkingSpots[1],
+          user: user,
+          date: '2019-12-21'
+        }).save();
+        await DayReservation.create({
+          spot: parkingSpots[2],
+          user: user,
+          date: '2019-12-21'
+        }).save();
+        const input = 'status 21.12.2019';
+        const output = await slackService.processSlackCommand(input);
+        const date = '2019-12-21';
+        expect(output).toEqual({
+          'response_type': 'in_channel',
+          'text': `0 / 3 parking spots are available on ${formatDate(date)}.`
+        });
+      });
+
       test('Should give error if date is invalid', async () => {
         const input = 'status 12.21.2019';
         const output = await slackService.processSlackCommand(input);
