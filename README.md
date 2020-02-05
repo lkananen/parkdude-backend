@@ -59,9 +59,9 @@ All REST API paths are defined in [router.ts](./app/router.ts). There is no sepa
 
 ### Slack integration
 
-Slack command functionality is split between two lambdas, SlackBot and AsyncSlackBot. The reason for this is that Slack requires every Slack command to respond something in 3 seconds. Due to Lambda cold starts more complicated requests could sometimes take slightly more than 3 seconds. To get around this, SlackBot lambda is the one that receives all requests. Simple requests that don't require db access it responds to directly.
+Slack command functionality is split between two lambdas, SlackBot and AsyncSlackBot. The reason for this is that Slack requires every Slack command to respond something in 3 seconds. Due to Lambda cold starts more complicated requests could sometimes take slightly more than 3 seconds. To get around this, SlackBot lambda is the one that receives all requests and sends the initial response.
 
-For more complicated Slack commands SlackBot lambda sends "empty" response, which tells Slack that the command has been received. It then starts AsyncSlackBot lambda which does the actual command processing and then sends the response to Slack.
+Simple requests that don't require db access can be responded directly by SlackBot lambda. For more complicated Slack commands SlackBot lambda sends an "empty" response, which tells Slack that the command has been received. It then starts AsyncSlackBot lambda which does the actual command processing and then sends the response to Slack.
 
 Slack integration also works in other direction. RestApi lambda can send "notifications" about events, such as parking spot reservations/releases, via a Slack webhook.
 
