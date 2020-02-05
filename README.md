@@ -55,7 +55,7 @@ Amazon S3 is used to host the static files of the web client.
 
 ### REST API
 
-All REST API paths are defined in [router.ts](./app/router.ts). There is no separate documentation for the paths, but all body and response interfaces have been defined with TypeScript. All interfaces can be found in [/api/interfaces](./app/interfaces) directory. Controllers in [/api/controllers](./app/controllers) can be checked for more exact details on expected parameter/body types.
+All REST API paths are defined in [router.ts](./app/router.ts). There is no separate documentation for the paths, but all body and response interfaces have been defined with TypeScript. All interfaces can be found in [/app/interfaces](./app/interfaces) directory. Controllers in [/app/controllers](./app/controllers) can be checked for more exact details on expected parameter/body types.
 
 ### Slack integration
 
