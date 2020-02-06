@@ -1421,7 +1421,7 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019'
+            '• Parking spot test space 1: 01.11.2019'
           ]
         ]);
       });
@@ -1464,7 +1464,7 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+            '• Parking spot test space 1: 01.11.2019 - 03.11.2019'
           ]
         ]);
       });
@@ -1511,22 +1511,22 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 0: 01.11.2019 - 02.11.2019'
+            '• Parking spot test space 0: 01.11.2019 - 02.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019\n' +
-            '- Parking spot test space 1: 03.11.2019'
+            '• Parking spot test space 1: 01.11.2019\n' +
+            '• Parking spot test space 1: 03.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 2: 02.11.2019 - 03.11.2019'
+            '• Parking spot test space 2: 02.11.2019 - 03.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 2: 01.11.2019\n' +
-            '- Parking spot test space 1: 02.11.2019\n' +
-            '- Parking spot test space 0: 03.11.2019'
+            '• Parking spot test space 2: 01.11.2019\n' +
+            '• Parking spot test space 1: 02.11.2019\n' +
+            '• Parking spot test space 0: 03.11.2019'
           ]
         ]);
       });
@@ -1567,15 +1567,15 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 0: 01.11.2019'
+            '• Parking spot test space 0: 01.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 2: 03.11.2019'
+            '• Parking spot test space 2: 03.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+            '• Parking spot test space 1: 01.11.2019 - 03.11.2019'
           ]
         ]);
       });
@@ -1636,27 +1636,27 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 0: 01.11.2019 - 03.11.2019\n' +
-            '- Parking spot test space 0: 05.11.2019'
+            '• Parking spot test space 0: 01.11.2019 - 03.11.2019\n' +
+            '• Parking spot test space 0: 05.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019\n' +
-            '- Parking spot test space 1: 04.11.2019\n' +
-            '- Parking spot test space 1: 07.11.2019'
+            '• Parking spot test space 1: 01.11.2019\n' +
+            '• Parking spot test space 1: 04.11.2019\n' +
+            '• Parking spot test space 1: 07.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 2: 04.11.2019\n' +
-            '- Parking spot test space 2: 06.11.2019'
+            '• Parking spot test space 2: 04.11.2019\n' +
+            '• Parking spot test space 2: 06.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 2: 01.11.2019 - 03.11.2019\n' +
-            '- Parking spot test space 0: 04.11.2019\n' +
-            '- Parking spot test space 2: 05.11.2019\n' +
-            '- Parking spot test space 1: 06.11.2019\n' +
-            '- Parking spot test space 2: 07.11.2019'
+            '• Parking spot test space 2: 01.11.2019 - 03.11.2019\n' +
+            '• Parking spot test space 0: 04.11.2019\n' +
+            '• Parking spot test space 2: 05.11.2019\n' +
+            '• Parking spot test space 1: 06.11.2019\n' +
+            '• Parking spot test space 2: 07.11.2019'
           ],
         ]);
       });
@@ -1718,7 +1718,7 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 0: 01.11.2019'
+            '• Parking spot test space 0: 01.11.2019'
           ]
         ]);
       });
@@ -1779,7 +1779,7 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 0: 01.11.2019'
+            '• Parking spot test space 0: 01.11.2019'
           ]
         ]);
       });
@@ -1826,12 +1826,12 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 2: 01.11.2019'
+            '• Parking spot test space 2: 01.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 0: 01.11.2019\n' +
-            '- Parking spot test space 2: 02.11.2019'
+            '• Parking spot test space 0: 01.11.2019\n' +
+            '• Parking spot test space 2: 02.11.2019'
           ]
         ]);
       });
@@ -1861,8 +1861,8 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019 - 02.11.2019\n' +
-            '- Parking spot test space 1: 04.11.2019 - 05.11.2019'
+            '• Parking spot test space 1: 01.11.2019 - 02.11.2019\n' +
+            '• Parking spot test space 1: 04.11.2019 - 05.11.2019'
           ]
         ]);
       });
@@ -2193,11 +2193,11 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019'
+            '• Parking spot test space 1: 01.11.2019'
           ],
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019'
+            '• 01.11.2019'
           ]
         ]);
       });
@@ -2236,12 +2236,12 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019 - 03.11.2019'
+            '• Parking spot test space 1: 01.11.2019 - 03.11.2019'
           ],
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019\n' +
-            '- 03.11.2019'
+            '• 01.11.2019\n' +
+            '• 03.11.2019'
           ]
         ]);
       });
@@ -2335,13 +2335,13 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019 - 02.11.2019\n' +
-            '- Parking spot test space 1: 04.11.2019 - 05.11.2019'
+            '• Parking spot test space 1: 01.11.2019 - 02.11.2019\n' +
+            '• Parking spot test space 1: 04.11.2019 - 05.11.2019'
           ],
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019 - 02.11.2019\n' +
-            '- 04.11.2019 - 05.11.2019'
+            '• 01.11.2019 - 02.11.2019\n' +
+            '• 04.11.2019 - 05.11.2019'
           ]
         ]);
       });
@@ -2369,7 +2369,7 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019'
+            '• 01.11.2019'
           ]
         ]);
       });
@@ -2414,9 +2414,9 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019 - 03.11.2019\n' +
-            '- 05.11.2019\n' +
-            '- 30.11.2019'
+            '• 01.11.2019 - 03.11.2019\n' +
+            '• 05.11.2019\n' +
+            '• 30.11.2019'
           ]
         ]);
       });
@@ -2514,15 +2514,15 @@ describe('Parking reservations (e2e)', () => {
         expect(slackMessageSpy.mock.calls).toEqual([
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019'
+            '• 01.11.2019'
           ],
           [
             'Reservations made by Tester:\n' +
-            '- Parking spot test space 1: 01.11.2019'
+            '• Parking spot test space 1: 01.11.2019'
           ],
           [
             'Parking spot test space 1 released for reservation:\n' +
-            '- 01.11.2019'
+            '• 01.11.2019'
           ]
         ]);
       });

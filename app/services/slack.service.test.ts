@@ -18,9 +18,9 @@ describe('Slack service', () => {
                        '> Gives list of all available parking spots for a given day. Defaults to current day.' +
                        ' Date can be given in format `dd.mm.yyyy` or `dd.mm`.\n' +
                        '> Example usages:\n' +
-                       '> - `/parkdude status`\n' +
-                       '> - `/parkdude status 30.11.2019`\n' +
-                       '> - `/parkdude status 30.11`\n';
+                       '> • `/parkdude status`\n' +
+                       '> • `/parkdude status 30.11.2019`\n' +
+                       '> • `/parkdude status 30.11`\n';
 
       test('Should return help text', async () => {
         const input = 'help';
@@ -111,6 +111,31 @@ describe('Slack service', () => {
           'text': `2 / 3 parking spots are available on ${formatDate(date)}:\n` +
                   '• test space 0\n' +
                   '• test space 2'
+        });
+      });
+
+      test('Should handle situation without available spots on specific date', async () => {
+        await DayReservation.create({
+          spot: parkingSpots[0],
+          user: user,
+          date: '2019-12-21'
+        }).save();
+        await DayReservation.create({
+          spot: parkingSpots[1],
+          user: user,
+          date: '2019-12-21'
+        }).save();
+        await DayReservation.create({
+          spot: parkingSpots[2],
+          user: user,
+          date: '2019-12-21'
+        }).save();
+        const input = 'status 21.12.2019';
+        const output = await slackService.processSlackCommand(input);
+        const date = '2019-12-21';
+        expect(output).toEqual({
+          'response_type': 'in_channel',
+          'text': `0 / 3 parking spots are available on ${formatDate(date)}.`
         });
       });
 
