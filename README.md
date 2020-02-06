@@ -1,7 +1,10 @@
 # Parkdude backend
 
 - [Parkdude backend](#parkdude-backend)
-  - [Project structure](#project-structure)
+  - [Directory structure](#directory-structure)
+  - [Architecture](#architecture)
+    - [REST API](#rest-api)
+    - [Slack integration](#slack-integration)
   - [How to run (development)](#how-to-run-development)
     - [Common prerequisites](#common-prerequisites)
       - [Local database setup](#local-database-setup)
@@ -12,11 +15,11 @@
   - [Testing](#testing)
   - [Linter](#linter)
   - [Admin user configuration](#admin-user-configuration)
-  - [Slack integration](#slack-integration)
+  - [Slack integration](#slack-integration-1)
   - [Google login configuration](#google-login-configuration)
   - [Production deployment](#production-deployment)
 
-## Project structure
+## Directory structure
 
 - `/app` Contains all Express related code. Most of the logic lies here.
   - `/controllers` Contains modules which process requests and provide responses. Controllers should mostly call service functions and not communicate with databases directly.
@@ -33,6 +36,34 @@
 - `/env` Contains environment variable files.
 - `/handlers` Contains lambda handler functions.
 - `/lib` Contains general library modules, basically CDK stack definitions.
+
+## Architecture
+
+Parkdude project consists of four parts: Web client, mobile client, Slack integration and backend. Web and mobile clients are in their own repositories. Below is a high level architecture diagram.
+
+![Architecture diagram](architecture.png)
+
+Backend is primarily a serverless application implemented with AWS Lambdas. The REST API however also works as a traditional Express server, which can be useful in local development.
+
+AWS stack is defined with AWS CDK ([ParkdudeBackendStack](./lib/parkdude-backend-stack.ts)), which defines all AWS component configurations.
+
+API Gateway forwards all requests either to RestApi lambda or to SlackBot lambda. RestApi lambda contains most of the application logic and does its internal route handling with ExpressJS. It also handles authentication.
+
+VPC is used to have a virtual network so that lambdas can communicate with the PostgreSQL database, hosted with Amazon RDS.
+
+Amazon S3 is used to host the static files of the web client.
+
+### REST API
+
+All REST API paths are defined in [router.ts](./app/router.ts). There is no separate documentation for the paths, but all body and response interfaces have been defined with TypeScript. All interfaces can be found in [/app/interfaces](./app/interfaces) directory. Controllers in [/app/controllers](./app/controllers) can be checked for more exact details on expected parameter/body types.
+
+### Slack integration
+
+Slack command functionality is split between two lambdas, SlackBot and AsyncSlackBot. The reason for this is that Slack requires every Slack command to respond something in 3 seconds. Due to Lambda cold starts more complicated requests could sometimes take slightly more than 3 seconds. To get around this, SlackBot lambda is the one that receives all requests and sends the initial response.
+
+Simple requests that don't require db access can be responded directly by SlackBot lambda. For more complicated Slack commands SlackBot lambda sends an "empty" response, which tells Slack that the command has been received. It then starts AsyncSlackBot lambda which does the actual command processing and then sends the response to Slack.
+
+Slack integration also works in other direction. RestApi lambda can send "notifications" about events, such as parking spot reservations/releases, via a Slack webhook.
 
 ## How to run (development)
 
