@@ -1,5 +1,7 @@
 # Parkdude backend
 
+[![Known Vulnerabilities](https://snyk.io/test/github/artruusi/parkdude-backend/badge.svg)](https://snyk.io/test/github/artruusi/parkdude-backend)
+
 - [Parkdude backend](#parkdude-backend)
   - [Directory structure](#directory-structure)
   - [Architecture](#architecture)
